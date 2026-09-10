@@ -100,10 +100,11 @@
           }
         ],
         resolution_steps: [
-          { num: 1, text: "Visually inspect manual butterfly isolation valve V-CH-04 at chiller heat exchanger return." },
-          { num: 2, text: "Verify and reset thermal cooling interlock Cooling_Interlock_Status back to 1 (Armed)." },
-          { num: 3, text: "Ramp auxiliary chiller flow Cooling_Water_Flow_PV strictly above 35.0 L/min." },
-          { num: 4, text: "Confirm reactor vessel jacket cooling resumes and Tank 101 core cools below 65.0°C." }
+          { num: 1, text: "Verify auxiliary chiller supply flow rate Cooling_Water_Flow_PV is strictly greater than 35.0 L/min." },
+          { num: 2, text: "Visually inspect manual butterfly isolation valve V-CH-04 at chiller heat exchanger return." },
+          { num: 3, text: "Open butterfly valve V-CH-04 to 100% full flow position and verify mechanical locking pin engagement." },
+          { num: 4, text: "Verify cooling interlock Cooling_Interlock_Status resets to 1 (ARMED) and return temperature drops below 22.0°C." },
+          { num: 5, text: "Confirm process heat exchanger cooling restored and all downstream reactor vessel thermal warnings extinguish." }
         ],
         notice: "Notice: Rectifying Chiller Flow Loss restores secondary coolant, which automatically cools Tank 101, unblocks the infeed conveyor, and extinguishes all 33 downstream cascade alarms plantwide without individual manual intervention.",
         btn_text: "⚡ Rectify Chiller Root Cause (Inspect Valve V-CH-04 & Restore Flow)",
@@ -115,7 +116,7 @@
         name: "Buffer Vessel Tank 101",
         asset: "Tank-101",
         sop_id: "SOP-TNK-002",
-        sop_title: "Tank 101 Thermal Overpressure Recovery & Emergency Deluge",
+        sop_title: "Buffer Vessel Tank 101 Exothermic Thermal Runaway & Overpressurization Mitigation",
         root_cause: {
           tag: "Tank101_Temp_PV",
           plain_name: "Reaction Core Temperature",
@@ -154,10 +155,11 @@
           }
         ],
         resolution_steps: [
-          { num: 1, text: "Open headspace vapor vent valve V-101 to relieve vessel pressure to safe scrubbers." },
-          { num: 2, text: "Confirm automated closure of reactant inlet valve Tank101_Inlet_Valve_Cmd." },
-          { num: 3, text: "Engage continuous recirculation pump Tank101_Discharge_Pump_Cmd at minimum 25% flow." },
-          { num: 4, text: "Verify product core temperature Tank101_Temp_PV settles below 65.0°C." }
+          { num: 1, text: "Open headspace vapor vent valve V-101 to relieve vessel pressure below 4.5 bar into secondary scrubber." },
+          { num: 2, text: "Command reactant feed shutoff valve Tank101_Inlet_Valve_Cmd to 0 (CLOSED) to stop mass chemical addition." },
+          { num: 3, text: "Activate emergency jacket deluge cooling and engage recirculation pump at minimum 25% flow." },
+          { num: 4, text: "Ramp agitator speed Tank101_Agitator_Speed_PV to 280 RPM to eliminate localized boundary-layer hot spots." },
+          { num: 5, text: "Verify reactor core temperature Tank101_Temp_PV stabilizes safely below 65.0°C and pressure settles to 2.2 bar." }
         ],
         notice: "Notice: Relieving Tank 101 temperature and pressure safely satisfies the chemical vessel interlock, un-pausing the infeed conveyor and extinguishing downstream cascade warnings.",
         btn_text: "⚡ Rectify Tank 101 Overpressure (Vent V-101 & Activate Deluge)",
@@ -169,7 +171,7 @@
         name: "Infeed Conveyor Line 201",
         asset: "Conveyor-201",
         sop_id: "SOP-CV-001",
-        sop_title: "Conveyor 201 Optical Jam Clearance & VFD Overcurrent Reset",
+        sop_title: "Conveyor 201 Optical Jam Clearance & Altivar VFD Fault Clearance",
         root_cause: {
           tag: "CV201_Jam_Detect_PE1",
           plain_name: "Optical Jam Photo-Eye Sensor PE1",
@@ -208,10 +210,11 @@
           }
         ],
         resolution_steps: [
-          { num: 1, text: "Press Conveyor 201 Local Stop button to de-energize drive and prevent belt friction burns." },
-          { num: 2, text: "Manually extract wedged tote from photo-eye PE1 area following zero-energy LOTO guidelines." },
-          { num: 3, text: "Transmit Modbus reset command to clear Altivar ATV320 fault code 402." },
-          { num: 4, text: "Verify motor phase current settles below 16.0A and restart conveyor belt at 1.85 m/s." }
+          { num: 1, text: "Depress Conveyor 201 Stop button or local E-Stop to de-energize motor stator and prevent belt surface friction burns." },
+          { num: 2, text: "Inspect optical sensor CV201_Jam_Detect_PE1 at infeed guide rails for wedged product containers or damaged cartons." },
+          { num: 3, text: "Perform zero-energy mechanical clearance of trapped items complying with LOTO safety protocols." },
+          { num: 4, text: "Clear inverter diagnostic register CV201_VFD_Fault_Code (Fault 402) from drive diagnostics page." },
+          { num: 5, text: "Verify drive motor phase current CV201_Motor_Current has settled below 16.5A and ramp belt speed to 1.85 m/s." }
         ],
         notice: "Notice: Clearing the physical mechanical obstruction at PE1 immediately extinguishes drive overcurrent and resets the inverter trip, allowing line transportation to resume seamlessly.",
         btn_text: "⚡ Rectify Conveyor Jam (Clear Tote PE1 & Reset VFD Fault 402)",
@@ -223,7 +226,7 @@
         name: "Plant Utilities & Raw Register",
         asset: "Safety-Grid",
         sop_id: "SOP-SYS-003",
-        sop_title: "Pneumatic Header Pressure Recovery & Dual-Channel E-Stop Re-Arming",
+        sop_title: "Master Emergency Stop Circuit Tripping & Pneumatic Pressure Recovery",
         root_cause: {
           tag: "Air_Pressure_Supply_PV",
           plain_name: "Main Pneumatic Header Air Pressure",
@@ -262,10 +265,11 @@
           }
         ],
         resolution_steps: [
-          { num: 1, text: "Verify auxiliary air compressor K-02 is operational and main supply manifold is pressurized." },
-          { num: 2, text: "Confirm header pressure Air_Pressure_Supply_PV recovers strictly above 6.0 bar." },
-          { num: 3, text: "Check physical E-Stop pushbuttons PB1/PB2 are rotated and released to normal position." },
-          { num: 4, text: "Depress Master Safety Reset blue pushbutton for 2.0s to re-arm dual-channel relay." }
+          { num: 1, text: "Visually verify that all personnel are clear of conveyor transfer points and rotating machinery." },
+          { num: 2, text: "Check auxiliary pneumatic compressor K-02 and verify header pressure Air_Pressure_Supply_PV > 6.0 bar." },
+          { num: 3, text: "Rotate and release all physical mushroom Emergency Stop pushbuttons on Line 01 (PB1 and PB2)." },
+          { num: 4, text: "Depress the Master Safety Reset blue pushbutton on main control cabinet door for 2.0 seconds to reset safety permissive." },
+          { num: 5, text: "Verify dual-channel safety relay Line01_EStop_Relay_Status channel A/B LED indicators illuminate solid green (1)." }
         ],
         notice: "Notice: Restoring compressed air pressure re-arms the dual-channel safety circuit, which re-energizes all pneumatic actuators and solenoid valves plantwide.",
         btn_text: "⚡ Rectify Utilities Root Cause (Start Aux Compressor & Re-Arm E-Stop)",

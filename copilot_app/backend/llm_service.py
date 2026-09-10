@@ -120,18 +120,16 @@ Provide:
         asset = cluster.get("primary_asset", "Unknown")
         sop_id = sop.get("sop_id", "SOP-STANDARD")
         sop_title = sop.get("sop_title", "Emergency Recovery Procedure")
-        steps = sop.get("steps", [])
-        step1 = steps[0]["instruction"] if steps else "Inspect equipment and contact supervisor."
-        step2 = steps[1]["instruction"] if len(steps) > 1 else "Verify process readings on HMI."
+        suppressed = cluster.get("suppressed_cascading_count", 0)
 
         return (
             f"ROOT CAUSE ANALYSIS:\n"
             f"The alarm burst was initiated by First-Out trigger {root_alm} on asset {asset}, "
             f"monitoring tag {root_tag} ({cluster.get('root_message', '')}). "
-            f"A total of {cluster.get('suppressed_cascading_count', 0)} secondary cascade symptoms were automatically suppressed.\n\n"
-            f"RECOMMENDED OPERATOR ACTION (Grounded in {sop_id}: {sop_title}):\n"
-            f"1. {step1}\n"
-            f"2. {step2}\n\n"
+            f"A total of {suppressed} secondary cascade symptoms were automatically suppressed, confirming {asset} as the primary root source.\n\n"
+            f"OPERATIONAL DIRECTIVE:\n"
+            f"Execute verified recovery protocol {sop_id}: {sop_title} (detailed in the verified checklist below). "
+            f"Rectifying this First-Out trigger eliminates the disturbance source and clears all downstream cascades.\n\n"
             f"SAFETY COMPLIANCE:\n"
-            f"Adhere strictly to verified procedure {sop_id}. All plant safety interlocks and thermal cutouts must remain fully armed."
+            f"Adhere strictly to verified procedure {sop_id}. All plant safety interlocks, LOTO boundaries, and thermal cutouts must remain fully armed."
         )

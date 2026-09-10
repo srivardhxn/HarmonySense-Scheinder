@@ -207,13 +207,19 @@ def explain_alarm(req: ExplainRequest):
     sop_result = retriever.retrieve_sop_for_cluster(req.alarm_id, req.tag_id)
 
     # 3. Formulate Cluster Context for SLM
+    matched_cluster = None
+    for c in live_state.get("recent_clusters", []):
+        if c.get("root_trigger_alarm_id") == req.alarm_id:
+            matched_cluster = c
+            break
+
     cluster_ctx = {
         "root_trigger_alarm_id": req.alarm_id,
-        "primary_asset": req.source_asset or "Equipment-Module",
-        "root_tag": req.tag_id or "Monitored_PV",
-        "root_message": f"Process threshold exceeded on {req.tag_id or req.alarm_id}",
-        "total_alarms_count": live_state.get("storm_alarm_count", 1) or 1,
-        "suppressed_cascading_count": max(0, (live_state.get("storm_alarm_count", 1) or 1) - 2)
+        "primary_asset": req.source_asset or (matched_cluster.get("primary_asset") if matched_cluster else "Equipment-Module"),
+        "root_tag": req.tag_id or (matched_cluster.get("root_tag") if matched_cluster else "Monitored_PV"),
+        "root_message": (matched_cluster.get("root_message") if matched_cluster else f"Process threshold exceeded on {req.tag_id or req.alarm_id}"),
+        "total_alarms_count": matched_cluster.get("total_alarms_count", 1) if matched_cluster else (live_state.get("storm_alarm_count", 1) or 1),
+        "suppressed_cascading_count": matched_cluster.get("suppressed_cascading_count", 0) if matched_cluster else max(0, (live_state.get("storm_alarm_count", 1) or 1) - 1)
     }
 
     # 4. Edge SLM Generation (Ollama or Offline Edge Engine)

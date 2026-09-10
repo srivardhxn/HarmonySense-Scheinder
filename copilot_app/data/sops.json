@@ -1,12 +1,11 @@
 [
   {
     "sop_id": "SOP-TNK-001",
-    "title": "Tank 101 Thermal Runaway and Chiller Cooling Loss Mitigation",
+    "title": "Chiller Cooling Circuit Flow Depletion & Isolation Valve V-CH-04 Clearance",
     "applies_to_alarms": [
-      "ALM-TNK-102-THH",
-      "ALM-TNK-102-TH",
       "ALM-CHL-001-FLOW",
-      "ALM-CHL-002-ITLK"
+      "ALM-CHL-002-ITLK",
+      "ALM-CHL-003-TEMP"
     ],
     "steps": [
       {
@@ -19,15 +18,15 @@
       },
       {
         "step": 3,
-        "instruction": "Confirm automated closure of reactant inlet valve Tank101_Inlet_Valve_Cmd to stop exothermic reactant feeding."
+        "instruction": "Open butterfly valve V-CH-04 to 100% full flow position and verify mechanical locking pin engagement."
       },
       {
         "step": 4,
-        "instruction": "Engage continuous recirculation pump Tank101_Discharge_Pump_Cmd at minimum 25% flow to prevent local thermal hot-spot boundary layer buildup."
+        "instruction": "Verify cooling interlock Cooling_Interlock_Status resets to 1 (ARMED) and return temperature Chiller_Return_Temp_PV drops below 22.0°C."
       },
       {
         "step": 5,
-        "instruction": "If product core temperature Tank101_Temp_PV remains above 85.0°C for > 60 seconds, notify shift supervisor and initiate emergency vessel cooling deluge."
+        "instruction": "Confirm process heat exchanger cooling restored and all downstream reactor vessel thermal warnings extinguish."
       }
     ],
     "restricted_actions": [
@@ -39,39 +38,46 @@
   },
   {
     "sop_id": "SOP-TNK-002",
-    "title": "Buffer Tank 101 Overfill Prevention & Headspace Pressure Recovery",
+    "title": "Buffer Vessel Tank 101 Exothermic Thermal Runaway & Overpressurization Mitigation",
     "applies_to_alarms": [
+      "ALM-TNK-102-THH",
+      "ALM-TNK-102-TH",
+      "ALM-TNK-103-PHH",
       "ALM-TNK-101-HH",
-      "ALM-TNK-101-H",
-      "ALM-TNK-103-PHH"
+      "ALM-TNK-101-H"
     ],
     "steps": [
       {
         "step": 1,
-        "instruction": "Cross-reference ultrasonic level transmitter Tank101_Level_PV against physical level sight glass on vessel port B."
+        "instruction": "Open headspace vapor vent valve V-101 to relieve vessel pressure below 4.5 bar into secondary scrubber."
       },
       {
         "step": 2,
-        "instruction": "Ensure emergency isolation solenoid Tank101_Inlet_Valve_Cmd is commanded to 0 (CLOSED)."
+        "instruction": "Command reactant feed shutoff valve Tank101_Inlet_Valve_Cmd to 0 (CLOSED) to stop mass chemical addition."
       },
       {
         "step": 3,
-        "instruction": "Verify headspace pressure Tank101_Pressure_PV is below rupture disk rating (5.5 bar)."
+        "instruction": "Activate emergency jacket deluge cooling and engage recirculation pump at minimum 25% flow."
       },
       {
         "step": 4,
-        "instruction": "Start transfer pump Tank101_Discharge_Pump_Cmd to route excess chemical volume to secondary overflow receiver Tank-102."
+        "instruction": "Ramp agitator speed Tank101_Agitator_Speed_PV to 280 RPM to eliminate localized boundary-layer hot spots."
+      },
+      {
+        "step": 5,
+        "instruction": "Verify reactor core temperature Tank101_Temp_PV stabilizes safely below 65.0°C and pressure settles to 2.2 bar."
       }
     ],
     "restricted_actions": [
       "high_level_switch_bypass",
       "override_relief_valve",
-      "force_inlet_valve_on"
+      "force_inlet_valve_on",
+      "disable_agitator_interlock"
     ]
   },
   {
     "sop_id": "SOP-CV-001",
-    "title": "Conveyor 201 Mechanical Jam & Drive Motor Overload Clearance",
+    "title": "Conveyor 201 Optical Jam Clearance & Altivar VFD Fault Clearance",
     "applies_to_alarms": [
       "ALM-CV-201-JAM",
       "ALM-CV-201-OC",
@@ -96,7 +102,7 @@
       },
       {
         "step": 5,
-        "instruction": "Clear inverter diagnostic register CV201_VFD_Fault_Code from the EcoStruxure HMI drive diagnostics page."
+        "instruction": "Clear inverter diagnostic register CV201_VFD_Fault_Code (Fault 402) from the EcoStruxure HMI drive diagnostics page."
       }
     ],
     "restricted_actions": [
@@ -110,8 +116,7 @@
     "title": "Control Network & Power Bus Transients Recovery",
     "applies_to_alarms": [
       "ALM-SYS-001-BUS",
-      "ALM-SYS-002-COMM",
-      "ALM-SYS-003-ESTOP"
+      "ALM-SYS-002-COMM"
     ],
     "steps": [
       {
@@ -134,10 +139,11 @@
   },
   {
     "sop_id": "SOP-SYS-003",
-    "title": "Master Emergency Stop Circuit Tripping & Line Re-Arming Protocol",
+    "title": "Master Emergency Stop Circuit Tripping & Pneumatic Pressure Recovery",
     "applies_to_alarms": [
       "ALM-SYS-003-ESTOP",
-      "ALM-ESTOP-001-TRIP"
+      "ALM-ESTOP-001-TRIP",
+      "ALM-SAFE-001-GRID"
     ],
     "steps": [
       {
@@ -146,11 +152,11 @@
       },
       {
         "step": 2,
-        "instruction": "Rotate and release all physical mushroom Emergency Stop pushbuttons on Line 01 (PB1 and PB2)."
+        "instruction": "Check auxiliary pneumatic compressor K-02 and verify header pressure Air_Pressure_Supply_PV > 6.0 bar."
       },
       {
         "step": 3,
-        "instruction": "Verify dual-channel safety relay Line01_EStop_Relay_Status channel A/B LED indicators illuminate solid green."
+        "instruction": "Rotate and release all physical mushroom Emergency Stop pushbuttons on Line 01 (PB1 and PB2)."
       },
       {
         "step": 4,
@@ -158,7 +164,7 @@
       },
       {
         "step": 5,
-        "instruction": "Check main pneumatic supply pressure Air_Pressure_Supply_PV has recovered above 6.0 bar before re-enabling drive stators."
+        "instruction": "Verify dual-channel safety relay Line01_EStop_Relay_Status channel A/B LED indicators illuminate solid green."
       }
     ],
     "restricted_actions": [
@@ -171,8 +177,6 @@
     "sop_id": "SOP-CHL-002",
     "title": "Industrial Chiller Pump Impeller Cavitation & Secondary Heat Exchanger Cascade Recovery (ASHRAE 15 / ISO 5149)",
     "applies_to_alarms": [
-      "ALM-CHL-001-FLOW",
-      "ALM-CHL-002-ITLK",
       "ALM-HX-101-CAVIT",
       "ALM-HX-101-FLOW_LOW"
     ],
