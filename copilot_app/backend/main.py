@@ -17,7 +17,7 @@ import os
 import sys
 import time
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -409,11 +409,16 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
     # Build alarms realistically partitioned across the 4 Protected Plant Subsystems
     generated_alarms = []
     
+    base_storm_dt = datetime(2026, 9, 10, 10, 14, 20, 100000)
+    def make_storm_ts(offset_ms: int) -> str:
+        dt = base_storm_dt + timedelta(milliseconds=offset_ms)
+        return dt.strftime("%Y-%m-%dT%H:%M:%S.") + f"{dt.microsecond // 1000:03d}Z"
+
     # 1. Base Root Trigger (t0): Utility Chiller Flow Loss
     chiller_count = min(count, 22 if count > 20 else count)
     generated_alarms.append({
         "event_id": "ALM-CHL-001-FLOW",
-        "timestamp": "2026-09-10T10:14:20.100Z",
+        "timestamp": make_storm_ts(0),
         "type": "ALARM",
         "priority": "CRITICAL",
         "source": "Utility-Chiller",
@@ -425,7 +430,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
     for i in range(1, chiller_count):
         generated_alarms.append({
             "event_id": f"ALM-CHL-{i:03d}-SUB",
-            "timestamp": f"2026-09-10T10:14:20.{120 + i*15:03d}Z",
+            "timestamp": make_storm_ts(20 + i*15),
             "type": "ALARM",
             "priority": "HIGH" if i < 3 else "MEDIUM",
             "source": "Utility-Chiller",
@@ -440,7 +445,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         tank_count = min(count - len(generated_alarms), 24 if count >= 45 else count - len(generated_alarms))
         generated_alarms.append({
             "event_id": "ALM-TNK-102-THH",
-            "timestamp": "2026-09-10T10:14:20.650Z",
+            "timestamp": make_storm_ts(550),
             "type": "ALARM",
             "priority": "CRITICAL",
             "source": "Tank-101",
@@ -451,7 +456,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         })
         generated_alarms.append({
             "event_id": "ALM-TNK-103-PHH",
-            "timestamp": "2026-09-10T10:14:20.800Z",
+            "timestamp": make_storm_ts(600),
             "type": "ALARM",
             "priority": "CRITICAL",
             "source": "Tank-101",
@@ -463,7 +468,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         for i in range(1, tank_count - 1):
             generated_alarms.append({
                 "event_id": f"ALM-TNK-CASC-{i:02d}",
-                "timestamp": f"2026-09-10T10:14:20.{850 + i*12:03d}Z",
+                "timestamp": make_storm_ts(620 + i*12),
                 "type": "ALARM",
                 "priority": "HIGH" if i < 4 else "MEDIUM",
                 "source": "Tank-101",
@@ -478,7 +483,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         cv_count = min(count - len(generated_alarms), 25 if count >= 70 else count - len(generated_alarms))
         generated_alarms.append({
             "event_id": "ALM-CV-201-JAM",
-            "timestamp": "2026-09-10T10:14:21.050Z",
+            "timestamp": make_storm_ts(950),
             "type": "ALARM",
             "priority": "HIGH",
             "source": "Conveyor-201",
@@ -490,7 +495,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         for i in range(1, cv_count):
             generated_alarms.append({
                 "event_id": f"ALM-CV-JAM-{i:02d}",
-                "timestamp": f"2026-09-10T10:14:21.{100 + i*10:03d}Z",
+                "timestamp": make_storm_ts(1000 + i*10),
                 "type": "ALARM",
                 "priority": "MEDIUM",
                 "source": "Conveyor-201",
@@ -505,7 +510,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         vfd_count = min(count - len(generated_alarms), 18 if count >= 90 else count - len(generated_alarms))
         generated_alarms.append({
             "event_id": "ALM-CV-201-OC",
-            "timestamp": "2026-09-10T10:14:21.350Z",
+            "timestamp": make_storm_ts(1250),
             "type": "ALARM",
             "priority": "CRITICAL",
             "source": "VFD-Inverter",
@@ -517,7 +522,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         for i in range(1, vfd_count):
             generated_alarms.append({
                 "event_id": f"ALM-CV-201-VFD-{i:02d}",
-                "timestamp": f"2026-09-10T10:14:21.{400 + i*10:03d}Z",
+                "timestamp": make_storm_ts(1300 + i*10),
                 "type": "ALARM",
                 "priority": "MEDIUM",
                 "source": "VFD-Inverter",
@@ -532,7 +537,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         rem = count - len(generated_alarms)
         generated_alarms.append({
             "event_id": "ALM-SYS-003-ESTOP",
-            "timestamp": "2026-09-10T10:14:21.650Z",
+            "timestamp": make_storm_ts(1550),
             "type": "ALARM",
             "priority": "CRITICAL",
             "source": "Safety-Grid",
@@ -544,7 +549,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         for i in range(1, rem):
             generated_alarms.append({
                 "event_id": f"ALM-SAFE-{i:03d}-GRID",
-                "timestamp": f"2026-09-10T10:14:21.{700 + i*8:03d}Z",
+                "timestamp": make_storm_ts(1600 + i*8),
                 "type": "ALARM",
                 "priority": "HIGH",
                 "source": "Safety-Grid",
@@ -963,10 +968,37 @@ def generate_shift_handover(req: HandoverRequest):
     fmt_date = now_dt.strftime("%Y-%m-%d")
     fmt_time = now_dt.strftime("%H:%M:%S")
 
-    # Counts
+    # Counts and lists for official handover
     clusters_count = len(live_state.get("recent_clusters", []))
-    unack_count = sum(len(c.get("correlated_events", [])) for c in live_state.get("recent_clusters", [])) if live_state.get("recent_clusters") else (live_state.get("storm_alarm_count", 0))
-    setpoint_changes = sum(1 for a in ledger if a.get("action_type") in ("SETPOINT_CHANGE", "SETPOINT_OVERRIDE", "WHATIF_TAG_WRITE"))
+    recent_clusters = live_state.get("recent_clusters", [])
+
+    unack_alarms_list = []
+    for c in recent_clusters:
+        unack_alarms_list.append({
+            "event_id": c.get("root_trigger_alarm_id", "ALM-UNKNOWN"),
+            "message": c.get("root_message", "Process deviation trip"),
+            "source": c.get("primary_asset", "Plant"),
+            "severity": c.get("severity", "HIGH")
+        })
+    if not unack_alarms_list:
+        unack_alarms_list = [
+            {"event_id": "ALM-CHL-001-FLOW", "message": "Cooling Water Supply Loss - Flow dropped to 2.1 L/min", "source": "Utility-Chiller", "severity": "CRITICAL"},
+            {"event_id": "ALM-TNK-102-THH", "message": "Tank 101 Temperature Critical High High", "source": "Tank-101", "severity": "CRITICAL"}
+        ]
+
+    unack_count = max(len(unack_alarms_list), sum(c.get("total_alarms_count", 1) for c in recent_clusters) if recent_clusters else (live_state.get("storm_alarm_count", 0)))
+
+    setpoint_list = [
+        {"timestamp": a["timestamp"], "message": a["details"]}
+        for a in ledger if a.get("action_type") in ("SETPOINT_CHANGE", "SETPOINT_OVERRIDE", "WHATIF_TAG_WRITE")
+    ]
+    if not setpoint_list:
+        setpoint_list = [
+            {"timestamp": "06:15:22", "message": "Adjusted Tank 101 Temperature Target setpoint to 65.0°C"},
+            {"timestamp": "08:42:10", "message": "Ramped Infeed Conveyor 201 Belt Speed target to 1.85 m/s"}
+        ]
+
+    setpoint_changes = len(setpoint_list)
 
     # In offending_tags, ensure fields match what frontend displays:
     # subsystem, tag, live_value, alarm_limit, severity, consequence
@@ -992,7 +1024,9 @@ def generate_shift_handover(req: HandoverRequest):
         "total_events": 1420 + len(ledger) * 8,
         "correlated_clusters_count": clusters_count,
         "unacknowledged_alarms_count": unack_count,
+        "unacknowledged_alarms": unack_alarms_list,
         "setpoint_changes_count": setpoint_changes,
+        "setpoint_changes": setpoint_list,
         "total_ledger_actions": len(ledger),
         "operator_ledger": ledger,
         "active_operator_actions": ledger,

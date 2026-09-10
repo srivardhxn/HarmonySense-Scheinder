@@ -439,6 +439,18 @@
       const explainAlarm = async (alarmId, tagId, sourceAsset, forceFailure = false) => {
         setIsExplaining(true);
         setSelectedAlarm(alarmId);
+
+        // Synchronize with Cascade Resolution Subsystem
+        if (sourceAsset === "Utility-Chiller" || (alarmId && alarmId.includes("CHL"))) {
+          setSelectedCascadeSubsystem("chiller");
+        } else if (sourceAsset === "Tank-101" || (alarmId && alarmId.includes("TNK"))) {
+          setSelectedCascadeSubsystem("tank101");
+        } else if (sourceAsset === "Conveyor-201" || sourceAsset === "VFD-Inverter" || (alarmId && alarmId.includes("CV"))) {
+          setSelectedCascadeSubsystem("conveyor");
+        } else if (sourceAsset === "Safety-Grid" || sourceAsset === "Line-01" || (alarmId && (alarmId.includes("SYS") || alarmId.includes("SAFE")))) {
+          setSelectedCascadeSubsystem("utilities");
+        }
+
         try {
           const res = await fetch("/api/explain", {
             method: "POST",
@@ -1124,40 +1136,45 @@
 
                 <!-- Clusters / Alarms List -->
                 <div class="flex-1 overflow-y-auto space-y-3 pr-1">
-                  ${clusters.length > 0 ? clusters.map(cluster => html`
-                    <div class="bg-[#182740] border ${selectedAlarm === cluster.root_trigger_alarm_id ? 'border-emerald-500 ring-1 ring-emerald-500' : 'border-red-900/80'} rounded-lg p-3.5 transition">
+                  ${clusters.length > 0 ? clusters.map(cluster => {
+                    const isSelected = selectedAlarm === cluster.root_trigger_alarm_id;
+                    return html`
+                    <div 
+                      onClick=${() => explainAlarm(cluster.root_trigger_alarm_id, cluster.root_tag, cluster.primary_asset)}
+                      class="bg-[#182740] border ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-950/40 bg-[#192b47]' : 'border-red-900/80 hover:border-red-600/80'} rounded-lg p-3.5 transition cursor-pointer"
+                    >
                       <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-2">
                           <span class="badge-guardrail badge-red">FIRST-OUT ROOT</span>
                           <span class="font-mono text-xs font-bold text-red-300">${cluster.root_trigger_alarm_id}</span>
                         </div>
-                        <span class="text-[11px] font-mono text-slate-400">${cluster.primary_asset}</span>
+                        <span class="text-[11px] font-mono text-slate-300 font-semibold bg-[#131f33] px-2 py-0.5 rounded border border-slate-700/60">${cluster.primary_asset}</span>
                       </div>
 
                       <div class="mt-2 text-xs font-semibold text-slate-100">
                         ${cluster.root_message}
                       </div>
 
-                      <div class="mt-2 flex items-center justify-between text-xs">
+                      <div class="mt-2.5 flex items-center justify-between text-xs">
                         <div class="flex items-center space-x-2">
                           <span class="text-slate-400">Suppressed Cascades:</span>
-                          <span class="bg-red-900/60 text-red-200 font-bold px-1.5 py-0.2 rounded font-mono text-[11px]">
+                          <span class="bg-red-900/60 text-red-200 font-bold px-1.5 py-0.5 rounded font-mono text-[11px] border border-red-800">
                             +${cluster.suppressed_cascading_count} downstream
                           </span>
                         </div>
                         <button 
-                          onClick=${() => explainAlarm(cluster.root_trigger_alarm_id, cluster.root_tag, cluster.primary_asset)}
-                          class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded transition flex items-center space-x-1"
+                          onClick=${(e) => { e.stopPropagation(); explainAlarm(cluster.root_trigger_alarm_id, cluster.root_tag, cluster.primary_asset); }}
+                          class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded transition flex items-center space-x-1 shadow"
                         >
-                          ${isExplaining && selectedAlarm === cluster.root_trigger_alarm_id ? html`
+                          ${isExplaining && isSelected ? html`
                             <span class="animate-spin mr-1">⟳</span> Explaining...
                           ` : html`
-                            <span>Analyze Root Cause</span>
+                            <span>Root Cause & Rectify ↳</span>
                           `}
                         </button>
                       </div>
                     </div>
-                  `) : html`
+                  `;}) : html`
                     <div class="h-40 flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-[#1e314f] rounded-lg">
                       <div class="w-10 h-10 rounded-full bg-emerald-950 text-emerald-400 flex items-center justify-center mb-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>

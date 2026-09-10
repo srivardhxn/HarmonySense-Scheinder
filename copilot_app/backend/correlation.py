@@ -37,10 +37,10 @@ PROTECTED_ASSETS = {
 # - Primary-Heat-Exchanger: 5th subsystem isolated from 4 protected subsystems
 ASSET_TOPOLOGY = {
     "Primary-Heat-Exchanger": [],
-    "Utility-Chiller": ["Tank-101", "Conveyor-201", "VFD-Inverter", "Safety-Grid", "Line-01"],
-    "Tank-101": ["Conveyor-201", "VFD-Inverter", "Safety-Grid", "Line-01"],
-    "Conveyor-201": ["VFD-Inverter", "Safety-Grid", "Line-01"],
-    "VFD-Inverter": ["Safety-Grid", "Line-01"],
+    "Utility-Chiller": [],
+    "Tank-101": [],
+    "Conveyor-201": ["VFD-Inverter"],
+    "VFD-Inverter": [],
     "Safety-Grid": ["Line-01"],
     "Line-01": []
 }
