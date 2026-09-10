@@ -23,9 +23,13 @@ class SOPRetrievalEngine:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
+        # Drop old tables to ensure latest sync with sops.json and machine_context.json
+        cursor.execute("DROP TABLE IF EXISTS sops_fts")
+        cursor.execute("DROP TABLE IF EXISTS tags_fts")
+
         # Create FTS5 virtual table for SOP steps
         cursor.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS sops_fts USING fts5(
+            CREATE VIRTUAL TABLE sops_fts USING fts5(
                 sop_id,
                 title,
                 step_num UNINDEXED,
@@ -38,7 +42,7 @@ class SOPRetrievalEngine:
 
         # Create FTS5 virtual table for Machine Context tags
         cursor.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS tags_fts USING fts5(
+            CREATE VIRTUAL TABLE tags_fts USING fts5(
                 tag_id,
                 raw_address,
                 unit_parent,
@@ -48,13 +52,7 @@ class SOPRetrievalEngine:
             );
         """)
 
-        # Check if tables already populated
-        cursor.execute("SELECT count(*) FROM sops_fts")
-        sop_count = cursor.fetchone()[0]
-
-        if sop_count == 0:
-            self._populate_initial_data(cursor)
-
+        self._populate_initial_data(cursor)
         conn.commit()
         conn.close()
 
@@ -202,24 +200,35 @@ class SOPRetrievalEngine:
         sop_title = rows[0][1]
         restricted_actions = json.loads(rows[0][5]) if rows[0][5] else []
         
-        steps = []
-        for r in rows:
-            if r[0] == sop_id:
-                steps.append({
-                    "step": r[2],
-                    "instruction": r[3]
-                })
+        # Load complete verified steps from authoritative SOP store
+        sops_file = os.path.join(DATA_DIR, "sops.json")
+        full_steps = []
+        if os.path.exists(sops_file):
+            with open(sops_file, "r") as f:
+                sops = json.load(f)
+            for s in sops:
+                if s["sop_id"] == sop_id:
+                    full_steps = s.get("steps", [])
+                    restricted_actions = s.get("restricted_actions", restricted_actions)
+                    sop_title = s.get("title", sop_title)
+                    break
 
-        # Sort steps by step number
-        steps = sorted(steps, key=lambda s: s["step"])
+        if not full_steps:
+            for r in rows:
+                if r[0] == sop_id:
+                    full_steps.append({
+                        "step": r[2],
+                        "instruction": r[3]
+                    })
+            full_steps = sorted(full_steps, key=lambda s: s["step"])
 
         return {
             "matched": True,
             "sop_id": sop_id,
             "sop_title": sop_title,
-            "confidence_score": 0.94,
+            "confidence_score": 0.95,
             "confidence_level": "high",
             "restricted_actions": restricted_actions,
-            "steps": steps,
-            "citation": f"{sop_id}: {sop_title} (Steps 1-{len(steps)})"
+            "steps": full_steps,
+            "citation": f"{sop_id}: {sop_title} (Steps 1-{len(full_steps)})"
         }

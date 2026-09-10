@@ -131,5 +131,40 @@
       "disable_voltage_monitoring_relay",
       "tamper_substation_breaker_interlock"
     ]
+  },
+  {
+    "sop_id": "SOP-SYS-003",
+    "title": "Master Emergency Stop Circuit Tripping & Line Re-Arming Protocol",
+    "applies_to_alarms": [
+      "ALM-SYS-003-ESTOP",
+      "ALM-ESTOP-001-TRIP"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Visually verify that all personnel are clear of conveyor transfer points and rotating machinery."
+      },
+      {
+        "step": 2,
+        "instruction": "Rotate and release all physical mushroom Emergency Stop pushbuttons on Line 01 (PB1 and PB2)."
+      },
+      {
+        "step": 3,
+        "instruction": "Verify dual-channel safety relay Line01_EStop_Relay_Status channel A/B LED indicators illuminate solid green."
+      },
+      {
+        "step": 4,
+        "instruction": "Depress the Master Safety Reset blue pushbutton on main control cabinet door for 2.0 seconds to reset safety permissive."
+      },
+      {
+        "step": 5,
+        "instruction": "Check main pneumatic supply pressure Air_Pressure_Supply_PV has recovered above 6.0 bar before re-enabling drive stators."
+      }
+    ],
+    "restricted_actions": [
+      "bypass_estop_relay_contact",
+      "jumper_safety_gate_switch",
+      "override_dual_channel_interlock"
+    ]
   }
 ]

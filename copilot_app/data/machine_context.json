@@ -309,6 +309,22 @@
       "threshold": 0,
       "priority": "HIGH",
       "message": "Conveyor 201 ATV320 VFD Fault Detected"
+    },
+    {
+      "id": "ALM-SYS-003-ESTOP",
+      "tag_ref": "Line01_EStop_Relay_Status",
+      "condition": "EQUAL",
+      "threshold": 0,
+      "priority": "CRITICAL",
+      "message": "Master Dual-Channel Safety E-Stop Circuit Tripped (Line-Wide Halt)"
+    },
+    {
+      "id": "ALM-SYS-001-BUS",
+      "tag_ref": "Air_Pressure_Supply_PV",
+      "condition": "LOW",
+      "threshold": 4.5,
+      "priority": "HIGH",
+      "message": "Plant Main Pneumatic Supply Header Pressure Low (< 4.5 bar)"
     }
   ],
   "io": {

@@ -376,7 +376,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
     if count >= 46:
         cv_count = min(count - len(generated_alarms), 20 if count >= 71 else count - len(generated_alarms))
         generated_alarms.append({
-            "event_id": "ALM-CV-001-JAM",
+            "event_id": "ALM-CV-201-JAM",
             "timestamp": "2026-09-10T10:14:21.050Z",
             "type": "ALARM",
             "priority": "HIGH",
@@ -388,7 +388,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         })
         for i in range(1, cv_count):
             generated_alarms.append({
-                "event_id": f"ALM-CV-{i:03d}-SPD",
+                "event_id": f"ALM-CV-201-SPD-{i:02d}",
                 "timestamp": f"2026-09-10T10:14:21.{100 + i*12:03d}Z",
                 "type": "ALARM",
                 "priority": "MEDIUM",
@@ -403,7 +403,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
     if count >= 71:
         vfd_count = min(count - len(generated_alarms), 18 if count >= 90 else count - len(generated_alarms))
         generated_alarms.append({
-            "event_id": "ALM-VFD-402-OC",
+            "event_id": "ALM-CV-201-OC",
             "timestamp": "2026-09-10T10:14:21.350Z",
             "type": "ALARM",
             "priority": "CRITICAL",
@@ -415,7 +415,7 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
         })
         for i in range(1, vfd_count):
             generated_alarms.append({
-                "event_id": f"ALM-VFD-{i:03d}-ELEC",
+                "event_id": f"ALM-CV-201-VFD-{i:02d}",
                 "timestamp": f"2026-09-10T10:14:21.{400 + i*10:03d}Z",
                 "type": "ALARM",
                 "priority": "MEDIUM",
@@ -430,14 +430,14 @@ def trigger_alarm_storm_simulation(req: Optional[TriggerStormRequest] = None):
     if count >= 90:
         rem = count - len(generated_alarms)
         generated_alarms.append({
-            "event_id": "ALM-ESTOP-001-TRIP",
+            "event_id": "ALM-SYS-003-ESTOP",
             "timestamp": "2026-09-10T10:14:21.650Z",
             "type": "ALARM",
             "priority": "CRITICAL",
             "source": "Safety-Grid",
             "tag_id": "Line01_EStop_Relay_Status",
             "condition": "SAFETY_CIRCUIT_TRIPPED",
-            "message": "Master Dual-Channel Emergency Stop Relay Tripped (Line-Wide Stoppage)",
+            "message": "Master Dual-Channel Emergency Stop Relay Tripped (Line-Wide Halt)",
             "status": "UNACKNOWLEDGED"
         })
         for i in range(1, rem):
