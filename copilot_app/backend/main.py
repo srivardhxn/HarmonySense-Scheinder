@@ -30,6 +30,7 @@ from correlation import AlarmCorrelationEngine, parse_iso_ts
 from retrieval import SOPRetrievalEngine
 from guardrail import SafetyGuardrailFilter
 from llm_service import EdgeLLMService
+from chaos_sandbox import chaos_router
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data"))
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
@@ -37,7 +38,7 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fr
 app = FastAPI(
     title="Schneider Electric Industrial Copilot API",
     description="Edge-Native Runtime Copilot for Industrial HMI (Air-Gapped)",
-    version="1.2.0"
+    version="1.3.0"
 )
 
 app.add_middleware(
@@ -47,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount Chaos & What-If Sandbox Subsystem Router
+app.include_router(chaos_router)
 
 # Initialize engines
 correlator = AlarmCorrelationEngine(burst_window_seconds=3.5)

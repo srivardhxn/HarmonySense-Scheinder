@@ -26,6 +26,8 @@
   </script>
   <!-- 100% Offline Preact + HTM Bundle -->
   <script src="/vendor/preact-htm.min.js"></script>
+  <!-- Interactive Chaos Trigger & What-If Trajectory Sandbox Component -->
+  <script src="/ChaosSandbox.js"></script>
 </head>
 <body class="bg-[#0b1320] text-slate-100 min-h-screen flex flex-col selection:bg-emerald-600 selection:text-white">
   <div id="app" class="flex flex-col flex-1"></div>
@@ -398,6 +400,13 @@
               `)}
             </div>
           </div>
+
+          <!-- Interactive Edge-Case Injection Panel (Chaos Trigger) & What-If Safety Sandbox -->
+          ${window.ChaosSandboxComponent ? html`
+            <div class="px-6 pt-4">
+              <${window.ChaosSandboxComponent} onTriggerStorm=${triggerStorm} />
+            </div>
+          ` : ''}
 
           <!-- Main 3-Column HMI Workspace -->
           <main class="flex-1 p-6 grid grid-cols-12 gap-6 overflow-hidden">
