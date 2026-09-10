@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1920px;
+    height: 1080px;
+    background: #0d131f;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #f1f5f9;
+    padding: 38px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding-bottom: 18px;
+  }
+  .title-area h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .schneider-badge {
+    background: linear-gradient(135deg, #009530 0%, #00b33c 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .title-area p {
+    font-size: 15px;
+    color: #94a3b8;
+    margin-top: 6px;
+  }
+  .header-metrics {
+    display: flex;
+    gap: 12px;
+  }
+  .metric-chip {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: right;
+  }
+  .metric-chip .val {
+    font-size: 15px;
+    font-weight: 700;
+    color: #38bdf8;
+  }
+  .metric-chip .lbl {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Main Canvas Grid */
+  .canvas {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 20px;
+    position: relative;
+  }
+
+  /* Zone 1: Engineering Workstation */
+  .zone-workstation {
+    border: 1.5px dashed rgba(148, 163, 184, 0.35);
+    background: rgba(30, 41, 59, 0.35);
+    border-radius: 14px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+  }
+  .zone-label-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .zone-title {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #cbd5e1;
+  }
+  .zone-subtitle {
+    font-size: 12px;
+    color: #64748b;
+    background: rgba(255,255,255,0.06);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .workstation-cards {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .w-card {
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 12px 20px;
+    min-width: 280px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .w-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+  }
+  .w-card-tech {
+    font-size: 12px;
+    font-weight: 600;
+    color: #38bdf8;
+    margin-top: 3px;
+  }
+  .w-card-sub {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 3px;
+  }
+
+  /* One-time handoff badge */
+  .handoff-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    color: #fbbf24;
+    font-weight: 600;
+  }
+
+  /* Zone 2: Runtime Environment */
+  .zone-runtime {
+    flex: 1;
+    border: 1.5px solid rgba(0, 149, 48, 0.4);
+    background: rgba(15, 23, 42, 0.65);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .runtime-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .runtime-title-grp {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .runtime-title {
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #4ade80;
+  }
+  .runtime-badge {
+    background: rgba(0, 149, 48, 0.18);
+    border: 1px solid rgba(0, 149, 48, 0.45);
+    color: #4ade80;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .hardware-scope {
+    font-size: 12px;
+    color: #94a3b8;
+    display: flex;
+    gap: 16px;
+  }
+  .hardware-scope span b {
+    color: #f8fafc;
+  }
+
+  /* Horizontal Pipeline Grid */
+  .pipeline-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+    position: relative;
+    margin: 10px 0;
+  }
+
+  /* Pipeline Cards */
+  .step-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    min-height: 250px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+  }
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.5px;
+  }
+  .step-type-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+  .pill-rule { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+  .pill-db { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+  .pill-ai { background: rgba(236, 72, 153, 0.2); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.45); }
+  .pill-safety { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.45); }
+  .pill-ui { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+
+  .step-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .step-tech-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+  }
+  .tech-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .tech-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-top: 2px;
+  }
+  .step-features {
+    list-style: none;
+    font-size: 11.5px;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+  .step-features li {
+    position: relative;
+    padding-left: 12px;
+    margin-bottom: 4px;
+  }
+  .step-features li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #64748b;
+  }
+
+  /* Highlight: SLM Engine (Purple Theme from Original) */
+  .step-card.ai-highlight {
+    background: linear-gradient(180deg, rgba(79, 70, 229, 0.18) 0%, rgba(30, 41, 59, 0.95) 100%);
+    border: 1.5px solid #818cf8;
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.25);
+  }
+  .step-card.ai-highlight .step-name {
+    color: #e0e7ff;
+  }
+  .step-card.ai-highlight .tech-name {
+    color: #a5b4fc;
+  }
+  .step-card.ai-highlight .step-features li::before {
+    color: #818cf8;
+  }
+
+  /* Highlight: Safety Guardrail */
+  .step-card.safety-highlight {
+    border: 1.5px solid rgba(239, 68, 68, 0.45);
+  }
+  .step-card.safety-highlight .tech-name {
+    color: #fca5a5;
+  }
+
+  /* Connectors between cards */
+  .arrow-connector {
+    position: absolute;
+    right: -11px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 20px;
+    height: 20px;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 10px;
+  }
+
+  /* Bottom Legend & Status */
+  .footer-legend {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 14px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .legend-items {
+    display: flex;
+    gap: 22px;
+    align-items: center;
+  }
+  .l-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .l-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .dot-purple { background: #818cf8; }
+  .dot-green { background: #4ade80; }
+  .dot-red { background: #f87171; }
+  .dot-dashed { width: 14px; height: 2px; border-top: 2px dashed #fbbf24; }
+
+  .deployment-tag {
+    background: rgba(255,255,255,0.05);
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #cbd5e1;
+  }
+  .deployment-tag b {
+    color: #38bdf8;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="title-area">
+      <h1>
+        Edge-Native Alarm Copilot Architecture
+        <span class="schneider-badge">Schneider EcoStruxure™ Ready</span>
+      </h1>
+      <p>Low-Latency Deterministic Correlation, Zero-RAM SOP Retrieval & Offline Edge SLM for Industrial HMIs</p>
+    </div>
+    <div class="header-metrics">
+      <div class="metric-chip">
+        <div class="val">&lt; 1.2 GB RAM</div>
+        <div class="lbl">Total System Memory</div>
+      </div>
+      <div class="metric-chip">
+        <div class="val">100% Air-Gapped</div>
+        <div class="lbl">Zero Cloud Dependency</div>
+      </div>
+      <div class="metric-chip">
+        <div class="val">&lt; 1.5s</div>
+        <div class="lbl">End-to-End MTTR Cycle</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Canvas -->
+  <div class="canvas">
+
+    <!-- Top Zone: Engineering Workstation -->
+    <div class="zone-workstation">
+      <div class="zone-label-tag">
+        <span class="zone-title">Engineering Workstation</span>
+        <span class="zone-subtitle">Build Time · Commissioning Only · Online/Office</span>
+      </div>
+
+      <div class="workstation-cards">
+        <div class="w-card">
+          <div class="w-card-title">SOP Indexer <span>📄</span></div>
+          <div class="w-card-tech">SQLite FTS5 (BM25 Engine)</div>
+          <div class="w-card-sub">Indexes plant SOPs & incident logs into single zero-RAM .db file</div>
+        </div>
+
+        <div class="w-card">
+          <div class="w-card-title">Model Quantization <span>⚡</span></div>
+          <div class="w-card-tech">llama.cpp Quantizer (GGUF Q4_K_M)</div>
+          <div class="w-card-sub">Converts Qwen2.5-1.5B into 4-bit CPU-optimized weights (1.1 GB)</div>
+        </div>
+      </div>
+
+      <div class="handoff-banner">
+        <span>▼ One-Time Commissioning Export (Dashed Line: Deployed via USB / OT Network)</span>
+      </div>
+    </div>
+
+    <!-- Bottom Zone: Runtime Environment -->
+    <div class="zone-runtime">
+      <div class="runtime-header">
+        <div class="runtime-title-grp">
+          <span class="runtime-title">Schneider OT Runtime Environment</span>
+          <span class="runtime-badge">100% Fully Offline · Air-Gapped Operation</span>
+        </div>
+        <div class="hardware-scope">
+          <span><b>Option A:</b> Harmony iPC (On-Box Native)</span>
+          <span>•</span>
+          <span><b>Option B:</b> Harmony ST6 / GTU (Via DIN-Rail Edge Box)</span>
+        </div>
+      </div>
+
+      <!-- 6-Stage Horizontal Pipeline -->
+      <div class="pipeline-grid">
+
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div>
+            <div class="step-header">
+              <span class="step-num">STAGE 01</span>
+              <span class="step-type-pill pill-rule">Ingest</span>
+            </div>
+            <div class="step-name">Plant Floor Ingestion</div>
+            <div class="step-tech-box">
+              <div class="tech-label">PROTOCOL STACK</div>
+              <div class="tech-name">OPC UA / Modbus TCP</div>
+            </div>
+            <ul class="step-features">
+              <li>Listens to PLC alarm words</li>
+              <li>Real-time process trends (PV)</li>
+              <li>Operator action log buffer</li>
+            </ul>
+          </div>
+          <div class="arrow-connector">▶</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card">
+          <div>
+            <div class="step-header">
+              <span class="step-num">STAGE 02</span>
+              <span class="step-type-pill pill-rule">Deterministic</span>
+            </div>
+            <div class="step-name">Correlation Engine</div>
+            <div class="step-tech-box">
+              <div class="tech-label">STANDARDS ENGINE</div>
+              <div class="tech-name">ISA-18.2 First-Out + ISA-95</div>
+            </div>
+            <ul class="step-features">
+              <li>5-second sliding burst window</li>
+              <li>Isolates root trigger at t₀</li>
+              <li>Suppresses 40+ cascade symptoms</li>
+            </ul>
+          </div>
+          <div class="arrow-connector">▶</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card">
+          <div>
+            <div class="step-header">
+              <span class="step-num">STAGE 03</span>
+              <span class="step-type-pill pill-db">Retrieval</span>
+            </div>
+            <div class="step-name">SOP Knowledge Layer</div>
+            <div class="step-tech-box">
+              <div class="tech-label">EMBEDDED SEARCH</div>
+              <div class="tech-name">SQLite FTS5 (BM25)</div>
+            </div>
+            <ul class="step-features">
+              <li>Zero-RAM footprint page cache</li>
+              <li>Exact industrial tag matching</li>
+              <li>Pulls verified plant procedures</li>
+            </ul>
+          </div>
+          <div class="arrow-connector">▶</div>
+        </div>
+
+        <!-- Step 4: AI Highlight -->
+        <div class="step-card ai-highlight">
+          <div>
+            <div class="step-header">
+              <span class="step-num" style="color: #a5b4fc;">STAGE 04</span>
+              <span class="step-type-pill pill-ai">Local SLM</span>
+            </div>
+            <div class="step-name">Edge SLM Engine</div>
+            <div class="step-tech-box" style="background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.4);">
+              <div class="tech-label" style="color: #c7d2fe;">NATIVE C++ INFERENCE</div>
+              <div class="tech-name" style="color: #ffffff;">llama.cpp + Qwen2.5-1.5B</div>
+            </div>
+            <ul class="step-features">
+              <li>CPU mmap zero-copy memory</li>
+              <li>25-40 tokens/s on standard CPU</li>
+              <li>Generates root-cause hypothesis</li>
+            </ul>
+          </div>
+          <div class="arrow-connector">▶</div>
+        </div>
+
+        <!-- Step 5: Safety Highlight -->
+        <div class="step-card safety-highlight">
+          <div>
+            <div class="step-header">
+              <span class="step-num">STAGE 05</span>
+              <span class="step-type-pill pill-safety">Hard Gate</span>
+            </div>
+            <div class="step-name">Safety Guardrail Filter</div>
+            <div class="step-tech-box">
+              <div class="tech-label">FIREWALL LOGIC</div>
+              <div class="tech-name">Deterministic Regex & Interlocks</div>
+            </div>
+            <ul class="step-features">
+              <li>Blocks bypass / override advice</li>
+              <li>Enforces supervisor sign-off</li>
+              <li>Attaches confidence & SOP citations</li>
+            </ul>
+          </div>
+          <div class="arrow-connector">▶</div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="step-card">
+          <div>
+            <div class="step-header">
+              <span class="step-num">STAGE 06</span>
+              <span class="step-type-pill pill-ui">HMI Runtime</span>
+            </div>
+            <div class="step-name">Copilot HMI Widget</div>
+            <div class="step-tech-box">
+              <div class="tech-label">FRONTEND RUNTIME</div>
+              <div class="tech-name">EcoStruxure™ Web Control</div>
+            </div>
+            <ul class="step-features">
+              <li>Preact / HTML5 (Sub-100KB)</li>
+              <li>One-touch shift handover export</li>
+              <li>Root-cause card with SOP step</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Legend -->
+      <div class="footer-legend">
+        <div class="legend-items">
+          <div class="l-item"><div class="l-dot dot-purple"></div> <b>Purple Box:</b> Sole AI Inference Step (Grounded summarization only)</div>
+          <div class="l-item"><div class="l-dot dot-green"></div> <b>Solid Arrows:</b> Live OT Data Flow (&lt; 1.5s Total Latency)</div>
+          <div class="l-item"><div class="l-dot dot-dashed"></div> <b>Dashed Line:</b> One-Time Offline Commissioning Handoff</div>
+          <div class="l-item"><div class="l-dot dot-red"></div> <b>Red Gate:</b> Deterministic Safety Interlock Firewall</div>
+        </div>
+        <div class="deployment-tag">
+          Architecture: <b>Two-Tier Heterogeneous Industrial Edge</b>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</body>
+</html>

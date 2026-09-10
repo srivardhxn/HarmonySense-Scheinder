@@ -1,0 +1,338 @@
+{
+  "machine_id": "PKG-CV-TANK-04",
+  "asset_hierarchy": {
+    "enterprise": "Schneider-Industrial-Demo",
+    "site": "Plant-Grenoble",
+    "area": "Packaging-Hall-B",
+    "work_center": "Line-01-Filling-Conveyor",
+    "equipment_modules": [
+      {
+        "id": "Tank-101",
+        "name": "Buffer Storage Tank 101",
+        "type": "Vessel",
+        "description": "Temperature-controlled liquid chemical buffer tank with cooling jacket"
+      },
+      {
+        "id": "Conveyor-201",
+        "name": "Primary Infeed Conveyor 201",
+        "type": "MaterialHandling",
+        "description": "Variable-speed motorized belt conveyor with optical jam sensors"
+      },
+      {
+        "id": "Utility-Chiller",
+        "name": "Auxiliary Chilled Water Supply",
+        "type": "Utility",
+        "description": "Closed-loop chilled water heat exchange subsystem"
+      }
+    ]
+  },
+  "communications": {
+    "protocols": ["OPC UA", "Modbus TCP"],
+    "opc_ua_endpoint": "opc.tcp://192.168.10.50:4840",
+    "modbus_tcp_ip": "192.168.10.51",
+    "modbus_port": 502,
+    "scan_rate_ms": 250
+  },
+  "tags": [
+    {
+      "id": "Tank101_Level_PV",
+      "unit_parent": "Tank-101",
+      "data_type": "REAL",
+      "engineering_unit": "%",
+      "min": 0.0,
+      "max": 100.0,
+      "access": "read",
+      "raw_address": "%MF200",
+      "confidence": "high",
+      "description": "Buffer Tank 101 Ultrasonic Level Transmitter"
+    },
+    {
+      "id": "Tank101_Temp_PV",
+      "unit_parent": "Tank-101",
+      "data_type": "REAL",
+      "engineering_unit": "°C",
+      "min": 0.0,
+      "max": 150.0,
+      "access": "read",
+      "raw_address": "%MF204",
+      "confidence": "high",
+      "description": "Tank 101 RTD Core Product Temperature"
+    },
+    {
+      "id": "Tank101_Pressure_PV",
+      "unit_parent": "Tank-101",
+      "data_type": "REAL",
+      "engineering_unit": "bar",
+      "min": 0.0,
+      "max": 10.0,
+      "access": "read",
+      "raw_address": "%MF208",
+      "confidence": "high",
+      "description": "Tank 101 Headspace Pressure Transmitter"
+    },
+    {
+      "id": "Tank101_Inlet_Valve_Cmd",
+      "unit_parent": "Tank-101",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "write",
+      "raw_address": "%QX10.0",
+      "write_binding": "PLC_DO_10_0",
+      "confidence": "high",
+      "description": "Inlet Solenoid Isolation Valve 101"
+    },
+    {
+      "id": "Tank101_Discharge_Pump_Cmd",
+      "unit_parent": "Tank-101",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "write",
+      "raw_address": "%QX10.1",
+      "write_binding": "PLC_DO_10_1",
+      "confidence": "high",
+      "description": "Discharge Transfer Pump 101 VFD Run Command"
+    },
+    {
+      "id": "Cooling_Water_Flow_PV",
+      "unit_parent": "Utility-Chiller",
+      "data_type": "REAL",
+      "engineering_unit": "L/min",
+      "min": 0.0,
+      "max": 200.0,
+      "access": "read",
+      "raw_address": "%MF212",
+      "confidence": "high",
+      "description": "Jacket Cooling Water Flow Meter"
+    },
+    {
+      "id": "Cooling_Interlock_Status",
+      "unit_parent": "Utility-Chiller",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "read",
+      "raw_address": "%IX4.2",
+      "confidence": "high",
+      "description": "Chiller Safety Permissive Loop (1=Normal, 0=Tripped)"
+    },
+    {
+      "id": "CV201_Motor_Current",
+      "unit_parent": "Conveyor-201",
+      "data_type": "REAL",
+      "engineering_unit": "A",
+      "min": 0.0,
+      "max": 45.0,
+      "access": "read",
+      "raw_address": "%MF300",
+      "confidence": "high",
+      "description": "Conveyor 201 Geared Motor Phase Current"
+    },
+    {
+      "id": "CV201_Belt_Speed_PV",
+      "unit_parent": "Conveyor-201",
+      "data_type": "REAL",
+      "engineering_unit": "m/s",
+      "min": 0.0,
+      "max": 3.0,
+      "access": "read",
+      "raw_address": "%MF304",
+      "confidence": "high",
+      "description": "Conveyor 201 Rotary Encoder Linear Speed"
+    },
+    {
+      "id": "CV201_Jam_Detect_PE1",
+      "unit_parent": "Conveyor-201",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "read",
+      "raw_address": "%IX8.0",
+      "confidence": "high",
+      "description": "Infeed Accumulation Optical Photoeye"
+    },
+    {
+      "id": "CV201_VFD_Fault_Code",
+      "unit_parent": "Conveyor-201",
+      "data_type": "INT",
+      "engineering_unit": "code",
+      "min": 0,
+      "max": 999,
+      "access": "read",
+      "raw_address": "%MW310",
+      "confidence": "high",
+      "description": "Altivar Machine ATV320 Inverter Diagnostic Register"
+    },
+    {
+      "id": "Chiller_Return_Temp_PV",
+      "unit_parent": "Utility-Chiller",
+      "data_type": "REAL",
+      "engineering_unit": "°C",
+      "min": 0.0,
+      "max": 60.0,
+      "access": "read",
+      "raw_address": "%MF216",
+      "confidence": "high",
+      "description": "Chiller Secondary Loop Return Water Temperature"
+    },
+    {
+      "id": "Tank101_Agitator_Speed_PV",
+      "unit_parent": "Tank-101",
+      "data_type": "REAL",
+      "engineering_unit": "RPM",
+      "min": 0.0,
+      "max": 500.0,
+      "access": "read",
+      "raw_address": "%MF220",
+      "confidence": "high",
+      "description": "Tank 101 Impeller Mixing Agitator Speed"
+    },
+    {
+      "id": "Line01_EStop_Relay_Status",
+      "unit_parent": "Packaging-Hall-B",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "read",
+      "raw_address": "%IX0.0",
+      "confidence": "high",
+      "description": "Master Dual-Channel Safety E-Stop Circuit (1=Healthy, 0=Tripped)"
+    },
+    {
+      "id": "Air_Pressure_Supply_PV",
+      "unit_parent": "Packaging-Hall-B",
+      "data_type": "REAL",
+      "engineering_unit": "bar",
+      "min": 0.0,
+      "max": 12.0,
+      "access": "read",
+      "raw_address": "%MF110",
+      "confidence": "high",
+      "description": "Main Pneumatic Header Supply Air Pressure"
+    },
+    {
+      "id": "%MW100",
+      "unit_parent": "Unknown",
+      "data_type": "WORD",
+      "engineering_unit": "raw",
+      "min": 0,
+      "max": 65535,
+      "access": "read",
+      "raw_address": "%MW100",
+      "confidence": "low",
+      "description": "Unmapped Modbus Holding Register 100 (Legacy Address - Ambiguous Symbol)"
+    }
+  ],
+  "alarms": [
+    {
+      "id": "ALM-TNK-101-HH",
+      "tag_ref": "Tank101_Level_PV",
+      "condition": "HIGH_HIGH",
+      "threshold": 95.0,
+      "priority": "CRITICAL",
+      "message": "Tank 101 Level Critical High High - Overflow Imminent"
+    },
+    {
+      "id": "ALM-TNK-101-H",
+      "tag_ref": "Tank101_Level_PV",
+      "condition": "HIGH",
+      "threshold": 85.0,
+      "priority": "HIGH",
+      "message": "Tank 101 Level High Warning"
+    },
+    {
+      "id": "ALM-TNK-102-THH",
+      "tag_ref": "Tank101_Temp_PV",
+      "condition": "HIGH_HIGH",
+      "threshold": 85.0,
+      "priority": "CRITICAL",
+      "message": "Tank 101 Thermal Excursion - Exceeds Safe Process Limit"
+    },
+    {
+      "id": "ALM-TNK-102-TH",
+      "tag_ref": "Tank101_Temp_PV",
+      "condition": "HIGH",
+      "threshold": 75.0,
+      "priority": "MEDIUM",
+      "message": "Tank 101 Temperature High Advisory"
+    },
+    {
+      "id": "ALM-TNK-103-PHH",
+      "tag_ref": "Tank101_Pressure_PV",
+      "condition": "HIGH_HIGH",
+      "threshold": 6.5,
+      "priority": "CRITICAL",
+      "message": "Tank 101 Vessel Headspace Over-Pressure Alarm"
+    },
+    {
+      "id": "ALM-CHL-001-FLOW",
+      "tag_ref": "Cooling_Water_Flow_PV",
+      "condition": "LOW_LOW",
+      "threshold": 15.0,
+      "priority": "CRITICAL",
+      "message": "Cooling Water Supply Loss - Jacket Starvation"
+    },
+    {
+      "id": "ALM-CHL-002-ITLK",
+      "tag_ref": "Cooling_Interlock_Status",
+      "condition": "EQUAL",
+      "threshold": 0,
+      "priority": "CRITICAL",
+      "message": "Cooling System Safety Interlock Open Circuit"
+    },
+    {
+      "id": "ALM-CV-201-JAM",
+      "tag_ref": "CV201_Jam_Detect_PE1",
+      "condition": "EQUAL",
+      "threshold": 1,
+      "priority": "HIGH",
+      "message": "Conveyor 201 Infeed Jam Detected (>3.0s continuous blockage)"
+    },
+    {
+      "id": "ALM-CV-201-OC",
+      "tag_ref": "CV201_Motor_Current",
+      "condition": "HIGH_HIGH",
+      "threshold": 32.0,
+      "priority": "CRITICAL",
+      "message": "Conveyor 201 Drive Motor Overcurrent Trip"
+    },
+    {
+      "id": "ALM-CV-201-VFD",
+      "tag_ref": "CV201_VFD_Fault_Code",
+      "condition": "GREATER_THAN",
+      "threshold": 0,
+      "priority": "HIGH",
+      "message": "Conveyor 201 ATV320 VFD Fault Detected"
+    }
+  ],
+  "io": {
+    "digital_in": [
+      {"channel": "%IX4.0", "name": "EStop_Button_PB1", "state": 1},
+      {"channel": "%IX4.1", "name": "Tank101_HighLevel_Float", "state": 0},
+      {"channel": "%IX4.2", "name": "Cooling_Interlock_Contact", "state": 1},
+      {"channel": "%IX8.0", "name": "CV201_Optical_PE1", "state": 0}
+    ],
+    "digital_out": [
+      {"channel": "%QX10.0", "name": "Tank101_Inlet_Solenoid", "state": 1},
+      {"channel": "%QX10.1", "name": "Tank101_Discharge_Contactor", "state": 1},
+      {"channel": "%QX10.2", "name": "Cooling_Circulation_Pump_Run", "state": 1},
+      {"channel": "%QX12.0", "name": "CV201_Motor_Enable", "state": 1}
+    ],
+    "analog_in": [
+      {"channel": "%IW20.0", "tag_ref": "Tank101_Level_PV", "raw_range": "4-20mA"},
+      {"channel": "%IW20.1", "tag_ref": "Tank101_Temp_PV", "raw_range": "PT100_RTD"},
+      {"channel": "%IW20.2", "tag_ref": "Tank101_Pressure_PV", "raw_range": "4-20mA"},
+      {"channel": "%IW20.3", "tag_ref": "Cooling_Water_Flow_PV", "raw_range": "Pulse_Flow"},
+      {"channel": "%IW22.0", "tag_ref": "CV201_Motor_Current", "raw_range": "0-10V_CT"}
+    ],
+    "analog_out": [
+      {"channel": "%QW30.0", "tag_ref": "CV201_Speed_Setpoint", "raw_range": "0-10V"}
+    ]
+  }
+}

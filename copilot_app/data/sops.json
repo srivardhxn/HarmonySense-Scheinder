@@ -1,0 +1,135 @@
+[
+  {
+    "sop_id": "SOP-TNK-001",
+    "title": "Tank 101 Thermal Runaway and Chiller Cooling Loss Mitigation",
+    "applies_to_alarms": [
+      "ALM-TNK-102-THH",
+      "ALM-TNK-102-TH",
+      "ALM-CHL-001-FLOW",
+      "ALM-CHL-002-ITLK"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Verify auxiliary chiller jacket supply flow rate Cooling_Water_Flow_PV is strictly greater than 35.0 L/min."
+      },
+      {
+        "step": 2,
+        "instruction": "If chiller flow is depleted or zero, visually inspect manual butterfly isolation valve V-CH-04 at chiller heat exchanger return."
+      },
+      {
+        "step": 3,
+        "instruction": "Confirm automated closure of reactant inlet valve Tank101_Inlet_Valve_Cmd to stop exothermic reactant feeding."
+      },
+      {
+        "step": 4,
+        "instruction": "Engage continuous recirculation pump Tank101_Discharge_Pump_Cmd at minimum 25% flow to prevent local thermal hot-spot boundary layer buildup."
+      },
+      {
+        "step": 5,
+        "instruction": "If product core temperature Tank101_Temp_PV remains above 85.0°C for > 60 seconds, notify shift supervisor and initiate emergency vessel cooling deluge."
+      }
+    ],
+    "restricted_actions": [
+      "cooling_interlock_override",
+      "bypass_thermal_fuse",
+      "force_solenoid_open_during_thermal_trip",
+      "disable_high_temp_trip"
+    ]
+  },
+  {
+    "sop_id": "SOP-TNK-002",
+    "title": "Buffer Tank 101 Overfill Prevention & Headspace Pressure Recovery",
+    "applies_to_alarms": [
+      "ALM-TNK-101-HH",
+      "ALM-TNK-101-H",
+      "ALM-TNK-103-PHH"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Cross-reference ultrasonic level transmitter Tank101_Level_PV against physical level sight glass on vessel port B."
+      },
+      {
+        "step": 2,
+        "instruction": "Ensure emergency isolation solenoid Tank101_Inlet_Valve_Cmd is commanded to 0 (CLOSED)."
+      },
+      {
+        "step": 3,
+        "instruction": "Verify headspace pressure Tank101_Pressure_PV is below rupture disk rating (5.5 bar)."
+      },
+      {
+        "step": 4,
+        "instruction": "Start transfer pump Tank101_Discharge_Pump_Cmd to route excess chemical volume to secondary overflow receiver Tank-102."
+      }
+    ],
+    "restricted_actions": [
+      "high_level_switch_bypass",
+      "override_relief_valve",
+      "force_inlet_valve_on"
+    ]
+  },
+  {
+    "sop_id": "SOP-CV-001",
+    "title": "Conveyor 201 Mechanical Jam & Drive Motor Overload Clearance",
+    "applies_to_alarms": [
+      "ALM-CV-201-JAM",
+      "ALM-CV-201-OC",
+      "ALM-CV-201-VFD"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Depress Conveyor 201 Stop button or local E-Stop to de-energize motor stator and prevent belt surface friction burns."
+      },
+      {
+        "step": 2,
+        "instruction": "Inspect optical sensor CV201_Jam_Detect_PE1 at infeed guide rails for wedged product containers, damaged cartons, or reflective lens dust."
+      },
+      {
+        "step": 3,
+        "instruction": "Perform zero-energy mechanical clearance of trapped items complying with LOTO safety protocols."
+      },
+      {
+        "step": 4,
+        "instruction": "Verify drive motor phase current CV201_Motor_Current has settled below 16.5A before releasing drive restart command."
+      },
+      {
+        "step": 5,
+        "instruction": "Clear inverter diagnostic register CV201_VFD_Fault_Code from the EcoStruxure HMI drive diagnostics page."
+      }
+    ],
+    "restricted_actions": [
+      "jam_sensor_bypass_jumper",
+      "vfd_thermal_overload_defeat",
+      "increase_motor_current_trip_limit"
+    ]
+  },
+  {
+    "sop_id": "SOP-SYS-001",
+    "title": "Control Network & Power Bus Transients Recovery",
+    "applies_to_alarms": [
+      "ALM-SYS-001-BUS",
+      "ALM-SYS-002-COMM",
+      "ALM-SYS-003-ESTOP"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Verify 24VDC auxiliary switchboard power supply bus status and check Modicon M580 rack power indicator."
+      },
+      {
+        "step": 2,
+        "instruction": "Inspect Modbus TCP / Ethernet/IP switch link lights on local industrial managed switch."
+      },
+      {
+        "step": 3,
+        "instruction": "Once root power or network failure is rectified, perform collective alarm acknowledge from HMI Master Screen."
+      }
+    ],
+    "restricted_actions": [
+      "disable_voltage_monitoring_relay",
+      "tamper_substation_breaker_interlock"
+    ]
+  }
+]

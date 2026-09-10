@@ -1,0 +1,138 @@
+/* Schneider Electric Industrial Copilot Design System */
+:root {
+  --se-green: #009530;
+  --se-green-hover: #007c28;
+  --se-green-glow: rgba(0, 149, 48, 0.35);
+  --se-dark: #0b1320;
+  --se-panel: #131f33;
+  --se-panel-border: #1e314f;
+  --se-card: #182740;
+  --se-text: #f1f5f9;
+  --se-text-muted: #94a3b8;
+  --se-red: #ef4444;
+  --se-yellow: #f59e0b;
+  --se-blue: #3b82f6;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--se-dark);
+  color: var(--se-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--se-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--se-panel-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--se-green);
+}
+
+/* Schneider Green Theme Utilities */
+.bg-se-dark { background-color: var(--se-dark); }
+.bg-se-panel { background-color: var(--se-panel); }
+.bg-se-card { background-color: var(--se-card); }
+.border-se-border { border-color: var(--se-panel-border); }
+.text-se-green { color: var(--se-green); }
+.bg-se-green { background-color: var(--se-green); }
+.bg-se-green:hover { background-color: var(--se-green-hover); }
+
+/* Glow & Animation */
+.pulse-green {
+  animation: pulse-green 2s infinite;
+}
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(0, 149, 48, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(0, 149, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 149, 48, 0); }
+}
+
+.pulse-red {
+  animation: pulse-red 1.2s infinite;
+}
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Tag Value Bars */
+.progress-bar-bg {
+  background: #1e293b;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  background: var(--se-green);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+/* Badges */
+.badge-guardrail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge-green {
+  background: rgba(0, 149, 48, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(0, 149, 48, 0.4);
+}
+
+.badge-yellow {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.badge-red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.badge-blue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+/* Grid layout */
+.hmi-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 420px;
+  gap: 16px;
+  height: calc(100vh - 120px);
+}
+
+@media (max-width: 1200px) {
+  .hmi-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}

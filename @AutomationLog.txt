@@ -1,0 +1,7 @@
+2026-09-09 23:25:26.898 inspect_toolbar.py[11] <module> -> Find Control Timeout(10s): {ControlType: ToolBarControl}
+2026-09-10 00:00:33.153 place_lamp.py[51] <module> -> Find Control Timeout(10s): {ControlType: EditControl}
+2026-09-10 00:08:55.707 complete_motor_hmi_all.py[90] add_variable -> Can not move cursor. CustomControl's BoundingRectangle is (0,0,0,0)[0x0]. SearchProperties: {ControlType: CustomControl}
+2026-09-10 00:09:00.772 complete_motor_hmi_all.py[98] add_variable -> Can not move cursor. CustomControl's BoundingRectangle is (0,0,0,0)[0x0]. SearchProperties: {ControlType: CustomControl}
+2026-09-10 00:19:09.374 complete_hmi_and_simulation.py[161] <module> -> Find Control Timeout(10s): {AutomationId: 'DATAGRID_CONTROL', ControlType: DataGridControl}
+2026-09-10 00:25:15.396 resolve_all_and_run_simulation.py[81] <module> -> Find Control Timeout(10s): {AutomationId: 'DATAGRID_CONTROL', ControlType: DataGridControl}
+2026-09-10 00:26:22.104 execute_all_final.py[95] create_var -> Can not move cursor. CustomControl's BoundingRectangle is (0,0,0,0)[0x0]. SearchProperties: {ControlType: CustomControl}
