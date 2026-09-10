@@ -401,10 +401,10 @@
             </div>
           </div>
 
-          <!-- Interactive Edge-Case Injection Panel (Chaos Trigger) & What-If Safety Sandbox -->
-          ${window.ChaosSandboxComponent ? html`
+          <!-- 60-Second "What-If" Deterministic Parameter Trajectory Safety Sandbox -->
+          ${(window.WhatIfSandboxComponent || window.ChaosSandboxComponent) ? html`
             <div class="px-6 pt-4">
-              <${window.ChaosSandboxComponent} onTriggerStorm=${triggerStorm} />
+              <${window.WhatIfSandboxComponent || window.ChaosSandboxComponent} />
             </div>
           ` : ''}
 

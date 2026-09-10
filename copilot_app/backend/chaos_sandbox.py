@@ -341,26 +341,48 @@ def simulate_parameter_trajectory(req: WhatIfSimRequest):
                 breach_parameter = "Cooling_Water_Flow_PV"
                 breach_value = round(flow_curr, 1)
 
+    peak_temp = max(p["temp_pv"] for p in trajectory)
+    final_temp = trajectory[-1]["temp_pv"]
+    final_pressure = trajectory[-1]["pressure_pv"]
+
     # Intercept Logic Verdict
+    base_payload = {
+        "action_proposed": f"{req.action_type} (Target Coolant: {round(target_cool_flow, 1)} L/min)",
+        "target_cool_flow": round(target_cool_flow, 1),
+        "initial_temp": round(t_fluid, 1),
+        "initial_flow": round(f_cool, 1),
+        "initial_pressure": round(p_head, 2),
+        "peak_temp": peak_temp,
+        "final_temp": final_temp,
+        "final_pressure": final_pressure,
+        "safe_temp_limit": PHYSICAL_SAFETY_LIMITS["Tank101_Temp_PV"]["safe_upper"],
+        "safe_flow_min": PHYSICAL_SAFETY_LIMITS["Cooling_Water_Flow_PV"]["safe_lower"],
+        "trajectory": trajectory
+    }
+
     if limit_breached:
         return {
+            **base_payload,
             "verdict": "SAFETY_INTERCEPT",
             "is_safe": False,
             "status_color": "RED",
-            "action_proposed": f"{req.action_type} (Target Coolant: {round(target_cool_flow, 1)} L/min)",
+            "breach_second": breach_second,
+            "breach_parameter": breach_parameter,
+            "breach_value": breach_value,
             "breach_summary": f"Safety boundary breached at t={breach_second}s: {breach_parameter} = {breach_value}",
             "intercept_message": f"[SAFETY INTERCEPT] Action will cause {breach_parameter} to reach {breach_value} at t={breach_second}s, "
-                                f"violating plant safe envelope. Automated execution rejected.",
-            "trajectory": trajectory
+                                f"violating plant safe envelope (85.0°C). Automated execution rejected.",
         }
     else:
         return {
+            **base_payload,
             "verdict": "SAFE_TO_APPLY",
             "is_safe": True,
             "status_color": "GREEN",
-            "action_proposed": f"{req.action_type} (Target Coolant: {round(target_cool_flow, 1)} L/min)",
-            "breach_summary": "All 60-second trajectory parameters remain within standard operating limits.",
+            "breach_second": None,
+            "breach_parameter": None,
+            "breach_value": None,
+            "breach_summary": "All 60-second trajectory parameters remain within standard operating limits (<85.0°C).",
             "intercept_message": "[SAFE TO APPLY] 60-second parameter projection confirms process stability. "
                                 "Operator confirmation slider enabled.",
-            "trajectory": trajectory
         }
