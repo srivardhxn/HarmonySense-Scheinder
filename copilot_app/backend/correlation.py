@@ -8,8 +8,24 @@ The LLM only receives already-clustered events, never a raw flood.
 """
 
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 import uuid
+
+# The 4 Protected Industrial Subsystems:
+# 1. Buffer Vessel Tank 101: Tank-101
+# 2. Chiller Cooling Circuit: Utility-Chiller
+# 3. Infeed Conveyor Line 201: Conveyor-201, VFD-Inverter
+# 4. Plant Utilities & Raw Register: Safety-Grid, Line-01, Plant-Utilities, PLC-Internal
+PROTECTED_ASSETS = {
+    "Utility-Chiller",
+    "Tank-101",
+    "Conveyor-201",
+    "VFD-Inverter",
+    "Safety-Grid",
+    "Line-01",
+    "Plant-Utilities",
+    "PLC-Internal"
+}
 
 # ISA-95 Equipment Subsystem Boundaries
 # Each physical equipment module groups its own internal cascading sensor alarms:
@@ -18,12 +34,13 @@ import uuid
 # - Conveyor-201: Optical jam PE1, belt slip, motor current, mechanical drag
 # - VFD-Inverter: Altivar inverter IGBT overcurrent, DC bus voltage, thermal fault
 # - Safety-Grid: Master dual-channel E-Stop relay, pneumatic safety dump valve
+# - Primary-Heat-Exchanger: 5th subsystem isolated from 4 protected subsystems
 ASSET_TOPOLOGY = {
-    "Primary-Heat-Exchanger": ["Utility-Chiller", "Tank-101"],
-    "Utility-Chiller": ["Primary-Heat-Exchanger", "Tank-101"],
-    "Tank-101": ["Conveyor-201"],
-    "Conveyor-201": ["VFD-Inverter"],
-    "VFD-Inverter": [],
+    "Primary-Heat-Exchanger": [],
+    "Utility-Chiller": ["Tank-101", "Conveyor-201", "VFD-Inverter", "Safety-Grid", "Line-01"],
+    "Tank-101": ["Conveyor-201", "VFD-Inverter", "Safety-Grid", "Line-01"],
+    "Conveyor-201": ["VFD-Inverter", "Safety-Grid", "Line-01"],
+    "VFD-Inverter": ["Safety-Grid", "Line-01"],
     "Safety-Grid": ["Line-01"],
     "Line-01": []
 }
@@ -85,13 +102,22 @@ class AlarmCorrelationEngine:
         """
         self.burst_window = timedelta(seconds=burst_window_seconds)
 
-    def correlate_events(self, raw_events: List[Dict[str, Any]]) -> List[AlarmCluster]:
+    def correlate_events(
+        self, 
+        raw_events: List[Dict[str, Any]], 
+        allowed_assets: Optional[Set[str]] = None
+    ) -> List[AlarmCluster]:
         """
         Groups raw alarm events into clusters using First-Out time sorting and asset topological coupling.
+        If allowed_assets is provided, strictly scopes correlation to those assets only,
+        preventing foreign or un-scoped subsystem alarms from leaking into clusters.
         Non-alarm events (PROCESS, OPERATOR_ACTION) are ignored by the alarm correlator.
         """
-        # Filter for active alarms only
-        alarm_events = [e for e in raw_events if e.get("type") == "ALARM"]
+        # Filter for active alarms only, scoped by allowed_assets if specified
+        alarm_events = [
+            e for e in raw_events 
+            if e.get("type") == "ALARM" and (allowed_assets is None or e.get("source") in allowed_assets)
+        ]
         if not alarm_events:
             return []
 
@@ -116,7 +142,8 @@ class AlarmCorrelationEngine:
                     # Must have topological asset coupling or shared line
                     if (alarm_source == cluster.primary_asset or 
                         alarm_source in cluster.affected_assets or
-                        alarm_source in ASSET_TOPOLOGY.get(cluster.primary_asset, [])):
+                        alarm_source in ASSET_TOPOLOGY.get(cluster.primary_asset, []) or
+                        any(alarm_source in ASSET_TOPOLOGY.get(a, []) for a in cluster.affected_assets)):
                         matched_cluster = cluster
                         break
 

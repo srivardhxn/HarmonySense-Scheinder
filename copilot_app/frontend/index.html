@@ -35,7 +35,249 @@
   <script>
     const { html, render, useState, useEffect, useRef } = window.htmPreact;
 
+    // --- CASCADING FAILURE TOPOLOGY & ROOT CAUSE RESOLUTION MODELS (4 Protected Subsystems Only) ---
+    const CASCADE_SUBSYSTEMS = {
+      chiller: {
+        id: "chiller",
+        subsystem_num: 2,
+        name: "Chiller Cooling Circuit",
+        asset: "Utility-Chiller",
+        sop_id: "SOP-TNK-001",
+        sop_title: "Chiller Flow Loss Mitigation & Butterfly Valve V-CH-04 Clearance",
+        root_cause: {
+          tag: "Cooling_Water_Flow_PV",
+          plain_name: "Chiller Supply Coolant Flow Rate",
+          alarm_id: "ALM-CHL-001-FLOW",
+          severity: "CRITICAL",
+          threshold: "< 35.0 L/min (Tripped at 2.1 L/min)",
+          explanation: "Cooling water supply loop flow loss caused by closed butterfly isolation valve V-CH-04. Deprives process heat exchanger of coolant."
+        },
+        domino_cascades: [
+          {
+            step: 1,
+            subsystem: "Subsystem 1: Buffer Vessel Tank 101",
+            tag: "Tank101_Temp_PV",
+            tag_name: "Core Reaction Temp",
+            alarm: "ALM-TNK-102-THH",
+            severity: "CRITICAL",
+            why: "Coolant starvation leaves exothermic reactant heat unabsorbed; tank core rapidly rises toward 75°C thermal runaway threshold."
+          },
+          {
+            step: 2,
+            subsystem: "Subsystem 1: Buffer Vessel Tank 101",
+            tag: "Tank101_Pressure_PV",
+            tag_name: "Headspace Vapor Pressure",
+            alarm: "ALM-TNK-103-PHH",
+            severity: "HIGH",
+            why: "Elevated temperature vaporizes volatile solvent, raising vessel headspace toward the 5.5 bar rupture disk limit."
+          },
+          {
+            step: 3,
+            subsystem: "Subsystem 3: Infeed Conveyor Line 201",
+            tag: "CV201_Jam_Detect_PE1",
+            tag_name: "Infeed Optical Sensor PE1",
+            alarm: "ALM-CV-201-JAM",
+            severity: "HIGH",
+            why: "PLC interlock automatically slams reactant inlet valve closed, causing continuous carton backlog and optical sensor blockage at conveyor transfer point."
+          },
+          {
+            step: 4,
+            subsystem: "Subsystem 3: Altivar VFD Inverter",
+            tag: "CV201_Motor_Current",
+            tag_name: "Conveyor Drive Current",
+            alarm: "ALM-CV-201-OC",
+            severity: "CRITICAL",
+            why: "Mechanical friction from trapped containers stalls belt rollers, causing motor stator surge >24A and triggering Altivar VFD overcurrent lockout code 402."
+          },
+          {
+            step: 5,
+            subsystem: "Subsystem 4: Plant Utilities & Raw Register",
+            tag: "Line01_EStop_Relay_Status",
+            tag_name: "Dual-Channel Master Safety Relay",
+            alarm: "ALM-SYS-003-ESTOP",
+            severity: "CRITICAL",
+            why: "Line-wide conveyor drive trip and high thermal cutout drop the master dual-channel safety relay, halting the entire cell."
+          }
+        ],
+        resolution_steps: [
+          { num: 1, text: "Visually inspect manual butterfly isolation valve V-CH-04 at chiller heat exchanger return." },
+          { num: 2, text: "Verify and reset thermal cooling interlock Cooling_Interlock_Status back to 1 (Armed)." },
+          { num: 3, text: "Ramp auxiliary chiller flow Cooling_Water_Flow_PV strictly above 35.0 L/min." },
+          { num: 4, text: "Confirm reactor vessel jacket cooling resumes and Tank 101 core cools below 65.0°C." }
+        ],
+        notice: "Notice: Rectifying Chiller Flow Loss restores secondary coolant, which automatically cools Tank 101, unblocks the infeed conveyor, and extinguishes all 33 downstream cascade alarms plantwide without individual manual intervention.",
+        btn_text: "⚡ Rectify Chiller Root Cause (Inspect Valve V-CH-04 & Restore Flow)",
+        success_summary: "✓ Chiller flow restored to 42.5 L/min • Cooling interlock re-armed • Vessel core normalized • Downstream cascade cleared."
+      },
+      tank101: {
+        id: "tank101",
+        subsystem_num: 1,
+        name: "Buffer Vessel Tank 101",
+        asset: "Tank-101",
+        sop_id: "SOP-TNK-002",
+        sop_title: "Tank 101 Thermal Overpressure Recovery & Emergency Deluge",
+        root_cause: {
+          tag: "Tank101_Temp_PV",
+          plain_name: "Reaction Core Temperature",
+          alarm_id: "ALM-TNK-102-THH",
+          severity: "CRITICAL",
+          threshold: "> 70.0°C (Tripped at 78.4°C)",
+          explanation: "Exothermic chemical reaction rate outpaced jacket heat removal. High core temperature generating explosive headspace vapors."
+        },
+        domino_cascades: [
+          {
+            step: 1,
+            subsystem: "Subsystem 1: Buffer Vessel Tank 101",
+            tag: "Tank101_Pressure_PV",
+            tag_name: "Headspace Vapor Pressure",
+            alarm: "ALM-TNK-103-PHH",
+            severity: "HIGH",
+            why: "Thermal expansion and vapor pressure accumulation pressurizes closed vessel above 4.5 bar."
+          },
+          {
+            step: 2,
+            subsystem: "Subsystem 3: Infeed Conveyor Line 201",
+            tag: "CV201_Belt_Speed_PV",
+            tag_name: "Infeed Belt Speed",
+            alarm: "ALM-CASCADE-11",
+            severity: "MEDIUM",
+            why: "Automated emergency shutdown shuts reactant feed valve Tank101_Inlet_Valve_Cmd and pauses upstream feed conveyor to stop mass addition."
+          },
+          {
+            step: 3,
+            subsystem: "Subsystem 4: Plant Utilities & Raw Register",
+            tag: "Line01_EStop_Relay_Status",
+            tag_name: "Safety Permissive Relay",
+            alarm: "ALM-SAFE-001-GRID",
+            severity: "HIGH",
+            why: "Vessel high-high thermal trip latches the safety permissive interlock, disabling hazardous equipment."
+          }
+        ],
+        resolution_steps: [
+          { num: 1, text: "Open headspace vapor vent valve V-101 to relieve vessel pressure to safe scrubbers." },
+          { num: 2, text: "Confirm automated closure of reactant inlet valve Tank101_Inlet_Valve_Cmd." },
+          { num: 3, text: "Engage continuous recirculation pump Tank101_Discharge_Pump_Cmd at minimum 25% flow." },
+          { num: 4, text: "Verify product core temperature Tank101_Temp_PV settles below 65.0°C." }
+        ],
+        notice: "Notice: Relieving Tank 101 temperature and pressure safely satisfies the chemical vessel interlock, un-pausing the infeed conveyor and extinguishing downstream cascade warnings.",
+        btn_text: "⚡ Rectify Tank 101 Overpressure (Vent V-101 & Activate Deluge)",
+        success_summary: "✓ Tank 101 temperature returned to 63.2°C • Pressure lowered to 2.2 bar • Reactant feed interlock restored."
+      },
+      conveyor: {
+        id: "conveyor",
+        subsystem_num: 3,
+        name: "Infeed Conveyor Line 201",
+        asset: "Conveyor-201",
+        sop_id: "SOP-CV-001",
+        sop_title: "Conveyor 201 Optical Jam Clearance & VFD Overcurrent Reset",
+        root_cause: {
+          tag: "CV201_Jam_Detect_PE1",
+          plain_name: "Optical Jam Photo-Eye Sensor PE1",
+          alarm_id: "ALM-CV-201-JAM",
+          severity: "HIGH",
+          threshold: "Continuous beam obstruction > 3.0s",
+          explanation: "Tilted tote or deformed carton wedged against the infeed side guide rails, blocking optical beam PE1 and seizing the belt."
+        },
+        domino_cascades: [
+          {
+            step: 1,
+            subsystem: "Subsystem 3: Infeed Conveyor Line 201",
+            tag: "CV201_Motor_Current",
+            tag_name: "Drive Motor Current",
+            alarm: "ALM-CV-CURRENT-HIGH",
+            severity: "HIGH",
+            why: "Drive roller seized against jammed tote, causing induction motor slip and current surge from 14.8A to 24.5A."
+          },
+          {
+            step: 2,
+            subsystem: "Subsystem 3: Altivar VFD Inverter",
+            tag: "CV201_VFD_Fault_Code",
+            tag_name: "Altivar ATV320 Diagnostic Register",
+            alarm: "ALM-CV-201-OC",
+            severity: "CRITICAL",
+            why: "Drive firmware detects I²t motor thermal overload and executes hard electronic trip with fault code 402."
+          },
+          {
+            step: 3,
+            subsystem: "Subsystem 4: Plant Utilities & Raw Register",
+            tag: "Line01_EStop_Relay_Status",
+            tag_name: "Cell Safety Relay",
+            alarm: "ALM-SYS-003-ESTOP",
+            severity: "HIGH",
+            why: "Inverter fault output drops drive OK relay on the master control bus, asserting line feed halt."
+          }
+        ],
+        resolution_steps: [
+          { num: 1, text: "Press Conveyor 201 Local Stop button to de-energize drive and prevent belt friction burns." },
+          { num: 2, text: "Manually extract wedged tote from photo-eye PE1 area following zero-energy LOTO guidelines." },
+          { num: 3, text: "Transmit Modbus reset command to clear Altivar ATV320 fault code 402." },
+          { num: 4, text: "Verify motor phase current settles below 16.0A and restart conveyor belt at 1.85 m/s." }
+        ],
+        notice: "Notice: Clearing the physical mechanical obstruction at PE1 immediately extinguishes drive overcurrent and resets the inverter trip, allowing line transportation to resume seamlessly.",
+        btn_text: "⚡ Rectify Conveyor Jam (Clear Tote PE1 & Reset VFD Fault 402)",
+        success_summary: "✓ Physical obstruction removed • Altivar fault 402 cleared • Belt velocity ramped to 1.85 m/s."
+      },
+      utilities: {
+        id: "utilities",
+        subsystem_num: 4,
+        name: "Plant Utilities & Raw Register",
+        asset: "Safety-Grid",
+        sop_id: "SOP-SYS-003",
+        sop_title: "Pneumatic Header Pressure Recovery & Dual-Channel E-Stop Re-Arming",
+        root_cause: {
+          tag: "Air_Pressure_Supply_PV",
+          plain_name: "Main Pneumatic Header Air Pressure",
+          alarm_id: "ALM-SYS-003-ESTOP",
+          severity: "CRITICAL",
+          threshold: "< 4.50 bar (Tripped at 3.55 bar)",
+          explanation: "Loss of main instrument compressed air pressure. Deprives pneumatic valve actuators and safety dump valves of operating pressure."
+        },
+        domino_cascades: [
+          {
+            step: 1,
+            subsystem: "Subsystem 4: Safety Grid",
+            tag: "Air_Pressure_Supply_PV",
+            tag_name: "Pneumatic Dump Valve",
+            alarm: "ALM-SAFE-GRID",
+            severity: "HIGH",
+            why: "Spring-return pneumatic cylinders and dump valves default to fail-safe exhaust, dropping line pressure."
+          },
+          {
+            step: 2,
+            subsystem: "Subsystem 4: Master Safety Grid",
+            tag: "Line01_EStop_Relay_Status",
+            tag_name: "Dual-Channel Safety Relay",
+            alarm: "ALM-ESTOP-001-TRIP",
+            severity: "CRITICAL",
+            why: "Dual-channel master safety relay Line01_EStop_Relay_Status de-energizes (1 -> 0), imposing an immediate plantwide halt."
+          },
+          {
+            step: 3,
+            subsystem: "Subsystem 1 & 3: Tank 101 & Conveyor 201",
+            tag: "Tank101_Inlet_Valve_Cmd",
+            tag_name: "Process Actuators",
+            alarm: "ALM-CASCADE-26",
+            severity: "HIGH",
+            why: "Safety circuit disconnect cuts 24VDC permissive power to all downstream solenoid valves and conveyor motor contactors."
+          }
+        ],
+        resolution_steps: [
+          { num: 1, text: "Verify auxiliary air compressor K-02 is operational and main supply manifold is pressurized." },
+          { num: 2, text: "Confirm header pressure Air_Pressure_Supply_PV recovers strictly above 6.0 bar." },
+          { num: 3, text: "Check physical E-Stop pushbuttons PB1/PB2 are rotated and released to normal position." },
+          { num: 4, text: "Depress Master Safety Reset blue pushbutton for 2.0s to re-arm dual-channel relay." }
+        ],
+        notice: "Notice: Restoring compressed air pressure re-arms the dual-channel safety circuit, which re-energizes all pneumatic actuators and solenoid valves plantwide.",
+        btn_text: "⚡ Rectify Utilities Root Cause (Start Aux Compressor & Re-Arm E-Stop)",
+        success_summary: "✓ Air header pressurized to 6.4 bar • Dual-channel safety relay re-armed • Cell automation re-energized."
+      }
+    };
+
     function App() {
+      // --- Selected Subsystem for Root Cause vs Cascade Map ---
+      const [selectedCascadeSubsystem, setSelectedCascadeSubsystem] = useState('chiller');
+      const [showTechnicalSpecs, setShowTechnicalSpecs] = useState(false);
+
       // --- WebSocket & Live PLC Tags (20 Tags across 5 Subsystems) ---
       const [liveTags, setLiveTags] = useState({
         "Tank101_Level_PV": 48.6,
@@ -310,19 +552,25 @@
         }
       };
 
-      // SOP-CHL-002: Resolve First-Out Root Cause & Clear Cascade Alarms
+      // Resolve First-Out Root Cause & Clear Cascade Alarms for Selected Protected Subsystem
       const resolveRootCause = async () => {
         setIsResolvingCascade(true);
         try {
           const res = await fetch("/api/resolve_root_cause", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operator: outgoingOp })
+            body: JSON.stringify({ 
+              operator: outgoingOp,
+              subsystem_key: selectedCascadeSubsystem 
+            })
           });
           const data = await res.json();
           setCascadeResolutionMsg(data);
-          // Query Copilot to showcase verified SOP-CHL-002
-          explainAlarm("ALM-HX-101-CAVIT", "HX_Pump101_Flow_PV", "Primary-Heat-Exchanger");
+          // Query Copilot to showcase verified grounded SOP for this subsystem's root alarm
+          const sub = CASCADE_SUBSYSTEMS[selectedCascadeSubsystem];
+          if (sub) {
+            explainAlarm(sub.root_cause.alarm_id, sub.root_cause.tag, sub.asset);
+          }
         } catch (err) {
           console.error("Resolve root cause error:", err);
         } finally {
@@ -446,7 +694,16 @@
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                     <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">20 PLC Tags Monitor</h2>
                   </div>
-                  <span class="text-[10px] font-mono text-slate-400">5 Plant Subsystems • 500ms</span>
+                  <div class="flex items-center space-x-2">
+                    <button 
+                      onClick=${() => setShowTechnicalSpecs(!showTechnicalSpecs)}
+                      class="text-[10px] px-2 py-0.5 rounded border border-[#1e314f] hover:border-emerald-500 text-slate-300 bg-[#182740] transition cursor-pointer flex items-center gap-1"
+                      title="Toggle between Operator Plain-Language View and Technical Memory Address Mode"
+                    >
+                      <span>${showTechnicalSpecs ? '🛠️ Technical Specs' : '👤 Operator Clarity'}</span>
+                    </button>
+                    <span class="text-[10px] font-mono text-slate-400">500ms</span>
+                  </div>
                 </div>
 
                 <!-- Process Tag List Grouped by Subsystem -->
@@ -454,67 +711,123 @@
                   
                   <!-- Subsystem 1: Buffer Vessel Tank 101 -->
                   <div>
-                    <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded bg-emerald-500"></span>
-                      Subsystem 1: Buffer Vessel Tank 101
+                    <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded bg-emerald-500"></span>
+                        Subsystem 1: Buffer Vessel Tank 101
+                      </span>
+                      <span class="text-[9px] font-mono text-slate-400">ISA-88 Batch</span>
                     </div>
                     <div class="space-y-2">
                       <!-- Level -->
                       <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
                         <div class="flex justify-between items-center text-xs mb-1">
-                          <span class="text-slate-400 font-mono">Tank101_Level_PV</span>
-                          <span class="font-bold text-slate-200 font-mono">${liveTags.Tank101_Level_PV} %</span>
+                          <div class="flex flex-col">
+                            <span class="text-slate-200 font-semibold text-[11px]">Vessel Level (% Full)</span>
+                            <span class="text-slate-400 font-mono text-[10px]" title="Ultrasonic level transmitter LT-101 on vessel headspace">Tank101_Level_PV</span>
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">NORMAL</span>
+                            <span class="font-bold text-slate-200 font-mono">${liveTags.Tank101_Level_PV} %</span>
+                          </div>
                         </div>
                         <div class="progress-bar-bg">
                           <div class="progress-bar-fill" style="width: ${Math.min(liveTags.Tank101_Level_PV, 100)}%;"></div>
                         </div>
+                        ${showTechnicalSpecs ? html`
+                          <div class="mt-1 pt-1 border-t border-slate-700/50 text-[9px] font-mono text-slate-400 flex justify-between">
+                            <span>Modbus 40001 (FLOAT32)</span>
+                            <span>Span: 0.0 - 100.0%</span>
+                          </div>
+                        ` : ''}
                       </div>
 
                       <!-- Temp -->
                       <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
                         <div class="flex justify-between items-center text-xs mb-1">
-                          <span class="text-slate-400 font-mono">Tank101_Temp_PV</span>
-                          <span class="font-bold font-mono ${liveTags.Tank101_Temp_PV > 75 ? 'text-red-400' : 'text-emerald-400'}">
-                            ${liveTags.Tank101_Temp_PV} °C
-                          </span>
+                          <div class="flex flex-col">
+                            <span class="text-slate-200 font-semibold text-[11px]">Reaction Core Temp</span>
+                            <span class="text-slate-400 font-mono text-[10px]" title="Duplex RTD temperature sensor TT-101 in reaction core">Tank101_Temp_PV</span>
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            ${liveTags.Tank101_Temp_PV > 75 ? html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800 animate-pulse">● CRITICAL HIGH</span>
+                            ` : html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">NORMAL</span>
+                            `}
+                            <span class="font-bold font-mono ${liveTags.Tank101_Temp_PV > 75 ? 'text-red-400' : 'text-emerald-400'}">
+                              ${liveTags.Tank101_Temp_PV} °C
+                            </span>
+                          </div>
                         </div>
                         <div class="progress-bar-bg">
                           <div class="progress-bar-fill ${liveTags.Tank101_Temp_PV > 75 ? 'bg-red-500' : 'bg-emerald-500'}" style="width: ${Math.min((liveTags.Tank101_Temp_PV / 120) * 100, 100)}%;"></div>
                         </div>
+                        ${showTechnicalSpecs ? html`
+                          <div class="mt-1 pt-1 border-t border-slate-700/50 text-[9px] font-mono text-slate-400 flex justify-between">
+                            <span>Modbus 40003 (FLOAT32)</span>
+                            <span>Trip: &gt; 70.0°C</span>
+                          </div>
+                        ` : ''}
                       </div>
 
                       <!-- Pressure -->
                       <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
                         <div class="flex justify-between items-center text-xs mb-1">
-                          <span class="text-slate-400 font-mono">Tank101_Pressure_PV</span>
-                          <span class="font-bold font-mono ${liveTags.Tank101_Pressure_PV > 5.0 ? 'text-red-400' : 'text-slate-200'}">
-                            ${liveTags.Tank101_Pressure_PV} bar
-                          </span>
+                          <div class="flex flex-col">
+                            <span class="text-slate-200 font-semibold text-[11px]">Headspace Vapor Pressure</span>
+                            <span class="text-slate-400 font-mono text-[10px]" title="Piezoresistive diaphragm pressure transmitter PT-101">Tank101_Pressure_PV</span>
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            ${liveTags.Tank101_Pressure_PV > 5.0 ? html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800 animate-pulse">● CRITICAL HIGH</span>
+                            ` : html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">NORMAL</span>
+                            `}
+                            <span class="font-bold font-mono ${liveTags.Tank101_Pressure_PV > 5.0 ? 'text-red-400' : 'text-slate-200'}">
+                              ${liveTags.Tank101_Pressure_PV} bar
+                            </span>
+                          </div>
                         </div>
                         <div class="progress-bar-bg">
                           <div class="progress-bar-fill ${liveTags.Tank101_Pressure_PV > 5.0 ? 'bg-red-500' : 'bg-blue-500'}" style="width: ${Math.min((liveTags.Tank101_Pressure_PV / 10) * 100, 100)}%;"></div>
                         </div>
+                        ${showTechnicalSpecs ? html`
+                          <div class="mt-1 pt-1 border-t border-slate-700/50 text-[9px] font-mono text-slate-400 flex justify-between">
+                            <span>Modbus 40005 (FLOAT32)</span>
+                            <span>Rupture Disk: 5.5 bar</span>
+                          </div>
+                        ` : ''}
                       </div>
 
                       <!-- Agitator Speed -->
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">Tank101_Agitator_Speed_PV</span>
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Impeller Agitator Speed</span>
+                          <span class="text-slate-400 font-mono text-[10px]">Tank101_Agitator_Speed_PV</span>
+                        </div>
                         <span class="font-bold text-slate-200 font-mono">${liveTags.Tank101_Agitator_Speed_PV} RPM</span>
                       </div>
 
                       <!-- Discrete Valves -->
                       <div class="grid grid-cols-2 gap-2 text-[11px]">
-                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center">
-                          <span class="text-slate-400 font-mono">Inlet_Valve</span>
-                          <span class="font-bold font-mono ${liveTags.Tank101_Inlet_Valve_Cmd === 1 ? 'text-emerald-400' : 'text-slate-400'}">
-                            ${liveTags.Tank101_Inlet_Valve_Cmd === 1 ? 'OPEN' : 'CLOSED'}
-                          </span>
+                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex flex-col justify-between">
+                          <div class="text-[10px] text-slate-400">Reactant Feed Inlet</div>
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-slate-300 font-mono text-[10px]">Inlet_Valve</span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${liveTags.Tank101_Inlet_Valve_Cmd === 1 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400 border border-slate-700'}">
+                              ${liveTags.Tank101_Inlet_Valve_Cmd === 1 ? 'OPEN' : 'CLOSED'}
+                            </span>
+                          </div>
                         </div>
-                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center">
-                          <span class="text-slate-400 font-mono">Discharge_Pump</span>
-                          <span class="font-bold font-mono ${liveTags.Tank101_Discharge_Pump_Cmd === 1 ? 'text-emerald-400' : 'text-slate-400'}">
-                            ${liveTags.Tank101_Discharge_Pump_Cmd === 1 ? 'RUNNING' : 'STOPPED'}
-                          </span>
+                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex flex-col justify-between">
+                          <div class="text-[10px] text-slate-400">Discharge Recirc Pump</div>
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-slate-300 font-mono text-[10px]">Discharge_Pump</span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${liveTags.Tank101_Discharge_Pump_Cmd === 1 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-400 border border-slate-700'}">
+                              ${liveTags.Tank101_Discharge_Pump_Cmd === 1 ? 'RUNNING' : 'STOPPED'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -522,27 +835,49 @@
 
                   <!-- Subsystem 2: Thermal Chiller Subsystem -->
                   <div>
-                    <div class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded bg-cyan-500"></span>
-                      Subsystem 2: Chiller Cooling Circuit
+                    <div class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded bg-cyan-500"></span>
+                        Subsystem 2: Chiller Cooling Circuit
+                      </span>
+                      <span class="text-[9px] font-mono text-slate-400">Secondary Loop</span>
                     </div>
                     <div class="space-y-2">
                       <!-- Chiller Flow -->
                       <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
                         <div class="flex justify-between items-center text-xs mb-1">
-                          <span class="text-slate-400 font-mono">Cooling_Water_Flow_PV</span>
-                          <span class="font-bold font-mono ${liveTags.Cooling_Water_Flow_PV < 15 ? 'text-red-400' : 'text-emerald-400'}">
-                            ${liveTags.Cooling_Water_Flow_PV} L/min
-                          </span>
+                          <div class="flex flex-col">
+                            <span class="text-slate-200 font-semibold text-[11px]">Coolant Supply Flow</span>
+                            <span class="text-slate-400 font-mono text-[10px]" title="Electromagnetic flow transmitter FT-CH01">Cooling_Water_Flow_PV</span>
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            ${liveTags.Cooling_Water_Flow_PV < 15 ? html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800 animate-pulse">● CRITICAL LOW</span>
+                            ` : html`
+                              <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">NORMAL</span>
+                            `}
+                            <span class="font-bold font-mono ${liveTags.Cooling_Water_Flow_PV < 15 ? 'text-red-400' : 'text-emerald-400'}">
+                              ${liveTags.Cooling_Water_Flow_PV} L/min
+                            </span>
+                          </div>
                         </div>
                         <div class="progress-bar-bg">
                           <div class="progress-bar-fill ${liveTags.Cooling_Water_Flow_PV < 15 ? 'bg-red-500' : 'bg-cyan-500'}" style="width: ${Math.min((liveTags.Cooling_Water_Flow_PV / 60) * 100, 100)}%;"></div>
                         </div>
+                        ${showTechnicalSpecs ? html`
+                          <div class="mt-1 pt-1 border-t border-slate-700/50 text-[9px] font-mono text-slate-400 flex justify-between">
+                            <span>Modbus 40009 (FLOAT32)</span>
+                            <span>Min Permissive: 35.0 L/min</span>
+                          </div>
+                        ` : ''}
                       </div>
 
                       <!-- Return Temp -->
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">Chiller_Return_Temp_PV</span>
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Secondary Loop Return Temp</span>
+                          <span class="text-slate-400 font-mono text-[10px]">Chiller_Return_Temp_PV</span>
+                        </div>
                         <span class="font-bold font-mono ${liveTags.Chiller_Return_Temp_PV > 30 ? 'text-red-400' : 'text-slate-200'}">
                           ${liveTags.Chiller_Return_Temp_PV} °C
                         </span>
@@ -550,11 +885,13 @@
 
                       <!-- Interlock Status -->
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">Cooling_Interlock_Status</span>
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Thermal Safety Interlock</span>
+                          <span class="text-slate-400 font-mono text-[10px]">Cooling_Interlock_Status</span>
+                        </div>
                         <div class="flex items-center space-x-1.5">
-                          <span class="w-2 h-2 rounded-full ${liveTags.Cooling_Interlock_Status === 1 ? 'bg-emerald-400' : 'bg-red-500 animate-ping'}"></span>
-                          <span class="font-bold font-mono ${liveTags.Cooling_Interlock_Status === 1 ? 'text-emerald-400' : 'text-red-400'}">
-                            ${liveTags.Cooling_Interlock_Status === 1 ? 'ARMED' : 'TRIPPED'}
+                          <span class="px-2 py-0.5 rounded text-[10px] font-bold ${liveTags.Cooling_Interlock_Status === 1 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800 animate-pulse'}">
+                            ${liveTags.Cooling_Interlock_Status === 1 ? 'ARMED (HEALTHY)' : 'TRIPPED (LOCKOUT)'}
                           </span>
                         </div>
                       </div>
@@ -563,31 +900,55 @@
 
                   <!-- Subsystem 3: Infeed Conveyor 201 -->
                   <div>
-                    <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded bg-amber-500"></span>
-                      Subsystem 3: Infeed Conveyor Line 201
+                    <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded bg-amber-500"></span>
+                        Subsystem 3: Infeed Conveyor Line 201
+                      </span>
+                      <span class="text-[9px] font-mono text-slate-400">Altivar ATV320</span>
                     </div>
                     <div class="space-y-2">
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">CV201_Belt_Speed_PV</span>
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Infeed Belt Velocity</span>
+                          <span class="text-slate-400 font-mono text-[10px]">CV201_Belt_Speed_PV</span>
+                        </div>
                         <span class="font-bold font-mono text-slate-200">${liveTags.CV201_Belt_Speed_PV} m/s</span>
                       </div>
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">CV201_Motor_Current</span>
-                        <span class="font-bold font-mono text-slate-200">${liveTags.CV201_Motor_Current} A</span>
-                      </div>
-                      <div class="grid grid-cols-2 gap-2 text-[11px]">
-                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center">
-                          <span class="text-slate-400 font-mono">Jam_PE1</span>
-                          <span class="font-bold font-mono ${liveTags.CV201_Jam_Detect_PE1 === 1 ? 'text-red-400' : 'text-emerald-400'}">
-                            ${liveTags.CV201_Jam_Detect_PE1 === 1 ? 'BLOCKED' : 'CLEAR'}
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Drive Motor Phase Current</span>
+                          <span class="text-slate-400 font-mono text-[10px]">CV201_Motor_Current</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          ${liveTags.CV201_Motor_Current > 20 ? html`
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800">● OVERLOAD</span>
+                          ` : html`
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">NOMINAL</span>
+                          `}
+                          <span class="font-bold font-mono ${liveTags.CV201_Motor_Current > 20 ? 'text-red-400' : 'text-slate-200'}">
+                            ${liveTags.CV201_Motor_Current} A
                           </span>
                         </div>
-                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center">
-                          <span class="text-slate-400 font-mono">VFD_Fault</span>
-                          <span class="font-bold font-mono ${liveTags.CV201_VFD_Fault_Code > 0 ? 'text-red-400' : 'text-slate-400'}">
-                            ${liveTags.CV201_VFD_Fault_Code > 0 ? 'ERR ' + liveTags.CV201_VFD_Fault_Code : '0 (OK)'}
-                          </span>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2 text-[11px]">
+                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex flex-col justify-between">
+                          <div class="text-[10px] text-slate-400">Optical Sensor PE1</div>
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-slate-300 font-mono text-[10px]">Jam_PE1</span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${liveTags.CV201_Jam_Detect_PE1 === 1 ? 'bg-red-950 text-red-400 border border-red-800 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}">
+                              ${liveTags.CV201_Jam_Detect_PE1 === 1 ? '● BLOCKED' : 'CLEAR'}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex flex-col justify-between">
+                          <div class="text-[10px] text-slate-400">Altivar VFD Diagnostic</div>
+                          <div class="flex items-center justify-between mt-1">
+                            <span class="text-slate-300 font-mono text-[10px]">VFD_Fault</span>
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${liveTags.CV201_VFD_Fault_Code > 0 ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-slate-800 text-slate-300 border border-slate-700'}">
+                              ${liveTags.CV201_VFD_Fault_Code > 0 ? '● TRIP ' + liveTags.CV201_VFD_Fault_Code : 'CODE 0 (OK)'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -595,19 +956,35 @@
 
                   <!-- Subsystem 4: Plant Infrastructure & Raw Modbus -->
                   <div>
-                    <div class="text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <span class="w-2 h-2 rounded bg-purple-500"></span>
-                      Subsystem 4: Plant Utilities & Raw Register
+                    <div class="text-[11px] font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded bg-purple-500"></span>
+                        Subsystem 4: Plant Utilities & Raw Register
+                      </span>
+                      <span class="text-[9px] font-mono text-slate-400">Pneumatics & Safety</span>
                     </div>
                     <div class="space-y-2">
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">Air_Pressure_Supply_PV</span>
-                        <span class="font-bold font-mono text-slate-200">${liveTags.Air_Pressure_Supply_PV} bar</span>
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Main Pneumatic Header</span>
+                          <span class="text-slate-400 font-mono text-[10px]">Air_Pressure_Supply_PV</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          ${liveTags.Air_Pressure_Supply_PV < 4.5 ? html`
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800 animate-pulse">● LOW AIR</span>
+                          ` : html`
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">NOMINAL</span>
+                          `}
+                          <span class="font-bold font-mono text-slate-200">${liveTags.Air_Pressure_Supply_PV} bar</span>
+                        </div>
                       </div>
                       <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
-                        <span class="text-slate-400 font-mono">Line01_EStop_Relay</span>
-                        <span class="font-bold font-mono ${liveTags.Line01_EStop_Relay_Status === 1 ? 'text-emerald-400' : 'text-red-400'}">
-                          ${liveTags.Line01_EStop_Relay_Status === 1 ? 'HEALTHY' : 'TRIPPED'}
+                        <div class="flex flex-col">
+                          <span class="text-slate-200 font-semibold text-[11px]">Master Safety Dual-Channel Relay</span>
+                          <span class="text-slate-400 font-mono text-[10px]">Line01_EStop_Relay_Status</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${liveTags.Line01_EStop_Relay_Status === 1 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800 animate-pulse'}">
+                          ${liveTags.Line01_EStop_Relay_Status === 1 ? 'HEALTHY (ARMED)' : 'TRIPPED (HALT)'}
                         </span>
                       </div>
 
@@ -615,7 +992,8 @@
                       <div class="bg-[#182740] p-2.5 rounded border border-amber-900/60 bg-amber-950/20">
                         <div class="flex justify-between items-center text-xs mb-1">
                           <div class="flex items-center space-x-1">
-                            <span class="text-amber-400 font-mono font-bold">%MW100</span>
+                            <span class="text-amber-300 font-semibold text-[11px]">Legacy Modicon Register</span>
+                            <span class="text-amber-400 font-mono font-bold text-[10px]">%MW100</span>
                             <button onClick=${() => setInfoModal('mw100')} class="text-[10px] text-amber-500 hover:text-amber-300">ⓘ</button>
                           </div>
                           <span class="font-bold text-amber-300 font-mono">${liveTags['%MW100']}</span>
@@ -624,7 +1002,7 @@
                           <span class="text-[10px] text-amber-400/80">Unmapped Legacy Memory Word</span>
                           <button 
                             onClick=${() => explainAlarm("ALM-RAW-MW100", "%MW100", "PLC-Internal")}
-                            class="text-[10px] bg-amber-800/40 hover:bg-amber-800 text-amber-200 px-1.5 py-0.5 rounded border border-amber-700 transition"
+                            class="text-[10px] bg-amber-800/40 hover:bg-amber-800 text-amber-200 px-1.5 py-0.5 rounded border border-amber-700 transition cursor-pointer"
                           >
                             Inspect %MW100
                           </button>
@@ -920,78 +1298,172 @@
                 </div>
               </div>
 
-              <!-- Root Cause vs Cascade Resolution Map Card (Domino Chain & 1-Click Rectification) -->
+              <!-- Root Cause vs Cascade Resolution Map Card (4 Protected Subsystems Only) -->
               <div class="bg-[#131f33] border border-[#1e314f] rounded-lg p-4 shadow flex flex-col">
                 <div class="flex items-center justify-between pb-2 border-b border-[#1e314f] mb-3">
                   <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full ${isStorm ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span>
                     <h2 class="text-xs font-bold tracking-wide uppercase text-slate-200">Root Cause vs Cascade Resolution Map</h2>
                   </div>
-                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
-                    SOP-CHL-002 Failover
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    ${CASCADE_SUBSYSTEMS[selectedCascadeSubsystem].sop_id} Verified
                   </span>
                 </div>
 
-                <!-- Cascade Domino Breakdown -->
-                <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f] mb-3 text-xs space-y-2">
-                  <div class="text-[11px] font-semibold text-rose-400 flex items-center justify-between">
-                    <span>⚡ First-Out Root Failure (Subsystem 5):</span>
-                    <span class="font-mono text-[10px] text-slate-400">Primary-Heat-Exchanger</span>
+                <!-- 4 Protected Subsystems Tab Selector -->
+                <div class="mb-3">
+                  <div class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Select Subsystem Domino Map:</span>
+                    <span class="text-[9px] text-emerald-400 font-mono">4 Systems Active</span>
                   </div>
-                  <div class="bg-[#0b1320] p-2 rounded border border-rose-900/60 font-mono text-[11px] text-rose-200">
-                    <div><strong>Offending Tag:</strong> HX_Suction_Pressure_PV (${typeof liveTags.HX_Suction_Pressure_PV === 'number' ? liveTags.HX_Suction_Pressure_PV.toFixed(2) : (liveTags.HX_Suction_Pressure_PV || 1.85)} bar &lt; 0.6 bar limit)</div>
-                    <div><strong>Root Alarm:</strong> ALM-HX-101-CAVIT (Impeller Cavitation & Suction Starvation)</div>
-                  </div>
-
-                  <!-- Downstream Cascade Domino Nodes -->
-                  <div class="text-[11px] text-slate-400 space-y-1.5 pt-1">
-                    <div class="font-semibold text-slate-300 flex items-center justify-between">
-                      <span>Secondary Domino Alarms Triggered:</span>
-                      <span class="text-[10px] text-amber-400 font-mono">4 Subsystems Impacted</span>
-                    </div>
-                    
-                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-amber-300 flex items-center justify-between">
-                      <span>↳ Subsystem 1: Tank 101</span>
-                      <span class="text-slate-300">ALM-TNK-001-TEMP (${liveTags.Tank101_Temp_PV}°C) & ALM-TNK-001-PRES</span>
-                    </div>
-                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-cyan-300 flex items-center justify-between">
-                      <span>↳ Subsystem 3: Conveyor 201</span>
-                      <span class="text-slate-300">ALM-CV-001-VFD (Thermal Overload & Backlog)</span>
-                    </div>
-                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-purple-300 flex items-center justify-between">
-                      <span>↳ Subsystem 2: Plant Chiller</span>
-                      <span class="text-slate-300">ALM-CHL-001-FLOW (Secondary Loop Starvation)</span>
-                    </div>
+                  <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-4 p-1 bg-[#0b1320] rounded-lg border border-[#1e314f]">
+                    ${[
+                      { key: 'chiller', num: 'S2', label: 'Chiller Circuit' },
+                      { key: 'tank101', num: 'S1', label: 'Buffer Tank 101' },
+                      { key: 'conveyor', num: 'S3', label: 'Infeed Conveyor' },
+                      { key: 'utilities', num: 'S4', label: 'Plant Utilities' }
+                    ].map(tab => html`
+                      <button
+                        onClick=${() => { setSelectedCascadeSubsystem(tab.key); setCascadeResolutionMsg(null); }}
+                        class="px-2 py-1.5 rounded text-[11px] font-semibold transition text-center cursor-pointer ${selectedCascadeSubsystem === tab.key ? 'bg-gradient-to-r from-emerald-700 to-emerald-600 text-white shadow-md border border-emerald-500' : 'text-slate-400 hover:text-slate-200 hover:bg-[#182740] border border-transparent'}"
+                      >
+                        <span class="text-[9px] font-mono opacity-80 mr-1">[${tab.num}]</span>${tab.label}
+                      </button>
+                    `)}
                   </div>
                 </div>
 
-                <!-- 1-Click Root Cause Rectification Button (SOP-CHL-002) -->
-                <div class="space-y-2">
-                  <button
-                    onClick=${resolveRootCause}
-                    disabled=${isResolvingCascade}
-                    id="btn-resolve-root-cause"
-                    class="w-full bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg shadow-lg border border-rose-400/40 flex items-center justify-center space-x-2 transition disabled:opacity-50"
-                  >
-                    <svg class="w-4 h-4 text-rose-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    <span>${isResolvingCascade ? 'Executing SOP-CHL-002 Failover...' : '⚡ Rectify Root Cause (SOP-CHL-002: Engage Standby Pump P-102)'}</span>
-                  </button>
+                <!-- Subsystem Dynamic Cascade Breakdown -->
+                ${(() => {
+                  const sub = CASCADE_SUBSYSTEMS[selectedCascadeSubsystem];
+                  const rootTagVal = liveTags[sub.root_cause.tag];
+                  return html`
+                    <div class="space-y-3">
+                      <!-- 1. Distinct Root Cause Card (Red Badge, Raw Tag + Plain English) -->
+                      <div class="bg-gradient-to-br from-[#1c1825] to-[#182740] p-3 rounded-lg border-2 border-red-500/70 shadow-md">
+                        <div class="flex items-center justify-between mb-2">
+                          <div class="flex items-center space-x-1.5">
+                            <span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-red-600 text-white tracking-wide uppercase flex items-center gap-1 animate-pulse">
+                              <span>●</span> FIRST-OUT ROOT CAUSE
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-300">[${sub.subsystem_num}] ${sub.name}</span>
+                          </div>
+                          <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800">
+                            ${sub.root_cause.alarm_id}
+                          </span>
+                        </div>
 
-                  ${cascadeResolutionMsg ? html`
-                    <div class="bg-emerald-950/80 border border-emerald-500 p-2.5 rounded text-xs text-emerald-200 space-y-1 animate-fade-in">
-                      <div class="font-bold flex items-center gap-1.5 text-emerald-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        <span>${cascadeResolutionMsg.message}</span>
+                        <div class="bg-[#0b1320]/80 p-2.5 rounded border border-red-900/50 space-y-1">
+                          <div class="flex items-center justify-between text-xs">
+                            <div class="flex items-center space-x-1.5">
+                              <span class="font-mono font-bold text-red-300 text-[11px]">${sub.root_cause.tag}</span>
+                              <span class="text-[10px] text-slate-400 font-sans">(${sub.root_cause.plain_name})</span>
+                            </div>
+                            <span class="font-mono font-extrabold text-red-400 text-xs">
+                              ${typeof rootTagVal === 'number' ? rootTagVal : (rootTagVal || 'ALERT')}
+                            </span>
+                          </div>
+                          <div class="text-[10px] text-red-300/80 font-mono">
+                            Trip Threshold: ${sub.root_cause.threshold}
+                          </div>
+                          <p class="text-[11px] text-slate-200 leading-relaxed pt-1 border-t border-red-900/40 font-sans">
+                            ${sub.root_cause.explanation}
+                          </p>
+                        </div>
                       </div>
-                      <div class="text-[11px] text-slate-300 font-mono">
-                        ${cascadeResolutionMsg.details}
+
+                      <!-- 2. Vertical Cascade Domino Breakdown (Top to Bottom Domino Story) -->
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f] space-y-2">
+                        <div class="flex items-center justify-between pb-1.5 border-b border-[#1e314f]">
+                          <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wide flex items-center gap-1.5">
+                            <span>↳</span> Downstream Cascades Triggered (Domino Path)
+                          </span>
+                          <span class="text-[10px] font-mono text-slate-400">${sub.domino_cascades.length} Downstream Stages</span>
+                        </div>
+
+                        <div class="relative pl-4 space-y-2.5 before:absolute before:left-1.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-red-500 before:via-amber-500 before:to-slate-700">
+                          ${sub.domino_cascades.map(cascade => {
+                            const cVal = liveTags[cascade.tag];
+                            return html`
+                              <div class="relative bg-[#131f33] p-2 rounded border border-slate-700/60 space-y-1 text-xs">
+                                <div class="absolute -left-[19px] top-2.5 w-2 h-2 rounded-full ${cascade.severity === 'CRITICAL' ? 'bg-red-500 ring-2 ring-red-950' : 'bg-amber-400 ring-2 ring-amber-950'}"></div>
+                                <div class="flex items-center justify-between">
+                                  <div class="flex items-center space-x-1.5">
+                                    <span class="text-[10px] font-bold text-slate-200">Step ${cascade.step}: ${cascade.subsystem}</span>
+                                  </div>
+                                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${cascade.severity === 'CRITICAL' ? 'bg-red-950 text-red-300 border border-red-800' : 'bg-amber-950 text-amber-300 border border-amber-800'}">
+                                    [${cascade.severity}] ${cascade.alarm}
+                                  </span>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] font-mono bg-[#0b1320] px-2 py-0.5 rounded text-slate-300">
+                                  <span>${cascade.tag} <span class="text-[10px] text-slate-400 font-sans">(${cascade.tag_name})</span></span>
+                                  <span class="font-bold text-amber-300">${typeof cVal === 'number' ? cVal : (cVal || 'ACTIVE')}</span>
+                                </div>
+                                <p class="text-[10px] text-slate-300 font-sans leading-tight">
+                                  <strong class="text-slate-400">Why it followed:</strong> ${cascade.why}
+                                </p>
+                              </div>
+                            `;
+                          })}
+                        </div>
                       </div>
-                      <div class="text-[10px] text-emerald-400 font-semibold">
-                        ✓ Standby Pump P-102 Active • Primary flow 48.5 L/min restored • All 4 secondary cascading alarms extinguished.
+
+                      <!-- 3. Concrete Stepwise Resolution Actions -->
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f] space-y-2">
+                        <div class="flex items-center justify-between pb-1 border-b border-[#1e314f]">
+                          <span class="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">
+                            Grounded Rectification Actions (${sub.sop_id})
+                          </span>
+                          <span class="text-[9px] font-mono text-emerald-400">ISA-18.2 Verified</span>
+                        </div>
+                        <div class="space-y-1.5 text-xs">
+                          ${sub.resolution_steps.map(step => html`
+                            <div class="flex items-start space-x-2 text-slate-200">
+                              <span class="font-mono font-bold text-emerald-400 text-[11px] min-w-[16px]">${step.num}.</span>
+                              <span class="text-[11px] text-slate-300">${step.text}</span>
+                            </div>
+                          `)}
+                        </div>
+                      </div>
+
+                      <!-- 4. Explicit Notice Callout -->
+                      <div class="bg-emerald-950/40 border border-emerald-600/60 p-2.5 rounded-lg flex items-start space-x-2">
+                        <span class="text-emerald-400 text-sm mt-0.5">💡</span>
+                        <div class="text-[11px] text-emerald-200 leading-snug">
+                          <strong>Key Architectural Notice:</strong> ${sub.notice}
+                        </div>
+                      </div>
+
+                      <!-- 5. 1-Click Rectify Root Cause Button -->
+                      <div class="space-y-2">
+                        <button
+                          onClick=${resolveRootCause}
+                          disabled=${isResolvingCascade}
+                          id="btn-resolve-root-cause"
+                          class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg shadow-lg border border-emerald-400/40 flex items-center justify-center space-x-2 transition disabled:opacity-50 cursor-pointer"
+                        >
+                          <svg class="w-4 h-4 text-emerald-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                          <span>${isResolvingCascade ? 'Executing ' + sub.sop_id + '...' : sub.btn_text}</span>
+                        </button>
+
+                        ${cascadeResolutionMsg ? html`
+                          <div class="bg-emerald-950/90 border border-emerald-500 p-2.5 rounded text-xs text-emerald-200 space-y-1 animate-fade-in">
+                            <div class="font-bold flex items-center gap-1.5 text-emerald-300">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                              <span>${cascadeResolutionMsg.message}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-300 font-mono">
+                              ${cascadeResolutionMsg.sop_executed} • ${cascadeResolutionMsg.root_cause_cleared}
+                            </div>
+                            <div class="text-[10px] text-emerald-400 font-semibold">
+                              ${sub.success_summary}
+                            </div>
+                          </div>
+                        ` : ''}
                       </div>
                     </div>
-                  ` : ''}
-                </div>
+                  `;
+                })()}
               </div>
 
               <!-- What-If Safety Sandbox Card -->
