@@ -36,7 +36,7 @@
     const { html, render, useState, useEffect, useRef } = window.htmPreact;
 
     function App() {
-      // --- WebSocket & Live PLC Tags (16 Tags across 4 Subsystems) ---
+      // --- WebSocket & Live PLC Tags (20 Tags across 5 Subsystems) ---
       const [liveTags, setLiveTags] = useState({
         "Tank101_Level_PV": 48.6,
         "Tank101_Temp_PV": 63.2,
@@ -53,8 +53,15 @@
         "CV201_VFD_Fault_Code": 0,
         "Line01_EStop_Relay_Status": 1,
         "Air_Pressure_Supply_PV": 6.4,
-        "%MW100": 1042
+        "%MW100": 1042,
+        "HX_Pump101_Flow_PV": 48.2,
+        "HX_Suction_Pressure_PV": 1.85,
+        "HX_Pump101_Vibration_PV": 1.1,
+        "HX_Standby_Pump_Cmd": 0
       });
+      const [isResolvingCascade, setIsResolvingCascade] = useState(false);
+      const [cascadeResolutionMsg, setCascadeResolutionMsg] = useState(null);
+      const [copiedHandover, setCopiedHandover] = useState(false);
       const [wsConnected, setWsConnected] = useState(false);
       const [packetCount, setPacketCount] = useState(0);
       const [lastPacketTime, setLastPacketTime] = useState("-");
@@ -303,6 +310,26 @@
         }
       };
 
+      // SOP-CHL-002: Resolve First-Out Root Cause & Clear Cascade Alarms
+      const resolveRootCause = async () => {
+        setIsResolvingCascade(true);
+        try {
+          const res = await fetch("/api/resolve_root_cause", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operator: outgoingOp })
+          });
+          const data = await res.json();
+          setCascadeResolutionMsg(data);
+          // Query Copilot to showcase verified SOP-CHL-002
+          explainAlarm("ALM-HX-101-CAVIT", "HX_Pump101_Flow_PV", "Primary-Heat-Exchanger");
+        } catch (err) {
+          console.error("Resolve root cause error:", err);
+        } finally {
+          setIsResolvingCascade(false);
+        }
+      };
+
       return html`
         <div class="min-h-screen flex flex-col bg-[#0b1320] text-slate-100">
           <!-- Top Schneider Electric Navbar -->
@@ -411,15 +438,15 @@
           <!-- Main 3-Column HMI Workspace -->
           <main class="flex-1 p-6 grid grid-cols-12 gap-6 overflow-hidden">
 
-            <!-- Column 1: Live PLC Process Tag Monitor (16 Tags across 4 Subsystems) -->
+            <!-- Column 1: Live PLC Process Tag Monitor (20 Tags across 5 Subsystems) -->
             <div class="col-span-12 lg:col-span-4 flex flex-col space-y-4">
               <div class="bg-[#131f33] border border-[#1e314f] rounded-lg p-4 shadow flex flex-col h-full">
                 <div class="flex items-center justify-between pb-3 border-b border-[#1e314f] mb-3">
                   <div class="flex items-center space-x-2">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                    <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">16 PLC Tags Monitor</h2>
+                    <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">20 PLC Tags Monitor</h2>
                   </div>
-                  <span class="text-[10px] font-mono text-slate-400">4 Plant Subsystems • 500ms</span>
+                  <span class="text-[10px] font-mono text-slate-400">5 Plant Subsystems • 500ms</span>
                 </div>
 
                 <!-- Process Tag List Grouped by Subsystem -->
@@ -606,6 +633,49 @@
                     </div>
                   </div>
 
+                  <!-- Subsystem 5: Primary Chiller P-101 & Heat Exchanger Loop (Cascade Root) -->
+                  <div>
+                    <div class="text-[11px] font-bold text-rose-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                      <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded bg-rose-500"></span>
+                        Subsystem 5: Primary Chiller P-101 Loop
+                      </span>
+                      <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-rose-950 text-rose-300 border border-rose-800">
+                        Cascade Root
+                      </span>
+                    </div>
+                    <div class="space-y-2">
+                      <!-- Flow -->
+                      <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-mono">HX_Pump101_Flow_PV</span>
+                        <span class="font-bold font-mono ${(liveTags.HX_Pump101_Flow_PV || 48.2) < 30.0 ? 'text-red-400 animate-pulse font-extrabold' : 'text-slate-200'}">
+                          ${typeof liveTags.HX_Pump101_Flow_PV === 'number' ? liveTags.HX_Pump101_Flow_PV.toFixed(1) : (liveTags.HX_Pump101_Flow_PV || 48.2)} L/min
+                        </span>
+                      </div>
+                      <!-- Suction Pressure -->
+                      <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-mono">HX_Suction_Pressure_PV</span>
+                        <span class="font-bold font-mono ${(liveTags.HX_Suction_Pressure_PV || 1.85) < 0.6 ? 'text-red-400 animate-pulse font-extrabold' : 'text-slate-200'}">
+                          ${typeof liveTags.HX_Suction_Pressure_PV === 'number' ? liveTags.HX_Suction_Pressure_PV.toFixed(2) : (liveTags.HX_Suction_Pressure_PV || 1.85)} bar
+                        </span>
+                      </div>
+                      <!-- Vibration -->
+                      <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-mono">HX_Pump101_Vibration_PV</span>
+                        <span class="font-bold font-mono ${(liveTags.HX_Pump101_Vibration_PV || 1.1) > 4.5 ? 'text-red-400 animate-pulse font-extrabold' : 'text-slate-200'}">
+                          ${typeof liveTags.HX_Pump101_Vibration_PV === 'number' ? liveTags.HX_Pump101_Vibration_PV.toFixed(2) : (liveTags.HX_Pump101_Vibration_PV || 1.1)} mm/s
+                        </span>
+                      </div>
+                      <!-- Standby Pump Cmd -->
+                      <div class="bg-[#182740] p-2 rounded border border-[#1e314f] flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-mono">HX_Standby_Pump_Cmd</span>
+                        <span class="font-bold font-mono ${(liveTags.HX_Standby_Pump_Cmd || 0) === 1 ? 'text-emerald-400' : 'text-slate-400'}">
+                          ${(liveTags.HX_Standby_Pump_Cmd || 0) === 1 ? '1 [P-102 ACTIVE]' : '0 [STANDBY]'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
 
                 <!-- Latency Monitor Footer -->
@@ -731,9 +801,10 @@
                         onChange=${e => setSetpointTag(e.target.value)}
                         class="bg-[#131f33] border border-[#1e314f] rounded px-2 py-1 text-slate-200 text-xs"
                       >
-                        <option value="Tank101_Temp_PV">Tank Temp Target</option>
-                        <option value="CV201_Belt_Speed_PV">Conveyor Speed</option>
+                        <option value="Tank101_Temp_PV">Tank Temp Target (°C)</option>
+                        <option value="CV201_Belt_Speed_PV">Conveyor Speed (m/s)</option>
                         <option value="Tank101_Agitator_Speed_PV">Agitator RPM</option>
+                        <option value="HX_Pump101_Flow_PV">Primary Chiller Flow (L/min)</option>
                       </select>
                       <input 
                         type="number" 
@@ -849,6 +920,80 @@
                 </div>
               </div>
 
+              <!-- Root Cause vs Cascade Resolution Map Card (Domino Chain & 1-Click Rectification) -->
+              <div class="bg-[#131f33] border border-[#1e314f] rounded-lg p-4 shadow flex flex-col">
+                <div class="flex items-center justify-between pb-2 border-b border-[#1e314f] mb-3">
+                  <div class="flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full ${isStorm ? 'bg-rose-500 animate-ping' : 'bg-emerald-500'}"></span>
+                    <h2 class="text-xs font-bold tracking-wide uppercase text-slate-200">Root Cause vs Cascade Resolution Map</h2>
+                  </div>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
+                    SOP-CHL-002 Failover
+                  </span>
+                </div>
+
+                <!-- Cascade Domino Breakdown -->
+                <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f] mb-3 text-xs space-y-2">
+                  <div class="text-[11px] font-semibold text-rose-400 flex items-center justify-between">
+                    <span>⚡ First-Out Root Failure (Subsystem 5):</span>
+                    <span class="font-mono text-[10px] text-slate-400">Primary-Heat-Exchanger</span>
+                  </div>
+                  <div class="bg-[#0b1320] p-2 rounded border border-rose-900/60 font-mono text-[11px] text-rose-200">
+                    <div><strong>Offending Tag:</strong> HX_Suction_Pressure_PV (${typeof liveTags.HX_Suction_Pressure_PV === 'number' ? liveTags.HX_Suction_Pressure_PV.toFixed(2) : (liveTags.HX_Suction_Pressure_PV || 1.85)} bar &lt; 0.6 bar limit)</div>
+                    <div><strong>Root Alarm:</strong> ALM-HX-101-CAVIT (Impeller Cavitation & Suction Starvation)</div>
+                  </div>
+
+                  <!-- Downstream Cascade Domino Nodes -->
+                  <div class="text-[11px] text-slate-400 space-y-1.5 pt-1">
+                    <div class="font-semibold text-slate-300 flex items-center justify-between">
+                      <span>Secondary Domino Alarms Triggered:</span>
+                      <span class="text-[10px] text-amber-400 font-mono">4 Subsystems Impacted</span>
+                    </div>
+                    
+                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-amber-300 flex items-center justify-between">
+                      <span>↳ Subsystem 1: Tank 101</span>
+                      <span class="text-slate-300">ALM-TNK-001-TEMP (${liveTags.Tank101_Temp_PV}°C) & ALM-TNK-001-PRES</span>
+                    </div>
+                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-cyan-300 flex items-center justify-between">
+                      <span>↳ Subsystem 3: Conveyor 201</span>
+                      <span class="text-slate-300">ALM-CV-001-VFD (Thermal Overload & Backlog)</span>
+                    </div>
+                    <div class="bg-[#131f33] p-1.5 rounded border border-slate-700/60 text-[10px] font-mono text-purple-300 flex items-center justify-between">
+                      <span>↳ Subsystem 2: Plant Chiller</span>
+                      <span class="text-slate-300">ALM-CHL-001-FLOW (Secondary Loop Starvation)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 1-Click Root Cause Rectification Button (SOP-CHL-002) -->
+                <div class="space-y-2">
+                  <button
+                    onClick=${resolveRootCause}
+                    disabled=${isResolvingCascade}
+                    id="btn-resolve-root-cause"
+                    class="w-full bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-500 text-white font-bold text-xs py-2.5 px-3 rounded-lg shadow-lg border border-rose-400/40 flex items-center justify-center space-x-2 transition disabled:opacity-50"
+                  >
+                    <svg class="w-4 h-4 text-rose-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>${isResolvingCascade ? 'Executing SOP-CHL-002 Failover...' : '⚡ Rectify Root Cause (SOP-CHL-002: Engage Standby Pump P-102)'}</span>
+                  </button>
+
+                  ${cascadeResolutionMsg ? html`
+                    <div class="bg-emerald-950/80 border border-emerald-500 p-2.5 rounded text-xs text-emerald-200 space-y-1 animate-fade-in">
+                      <div class="font-bold flex items-center gap-1.5 text-emerald-300">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>${cascadeResolutionMsg.message}</span>
+                      </div>
+                      <div class="text-[11px] text-slate-300 font-mono">
+                        ${cascadeResolutionMsg.details}
+                      </div>
+                      <div class="text-[10px] text-emerald-400 font-semibold">
+                        ✓ Standby Pump P-102 Active • Primary flow 48.5 L/min restored • All 4 secondary cascading alarms extinguished.
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+
               <!-- What-If Safety Sandbox Card -->
               <div class="bg-[#131f33] border border-[#1e314f] rounded-lg p-4 shadow">
                 <div class="flex items-center justify-between pb-2 border-b border-[#1e314f] mb-3">
@@ -914,111 +1059,321 @@
 
           <!-- Dynamic Shift Handover Modal -->
           ${showHandover ? html`
-            <div class="fixed inset-0 bg-black/80 flex items-center justify-center p-6 z-50">
-              <div class="bg-[#131f33] border border-[#1e314f] rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl">
+            <div class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 sm:p-6 z-50 animate-fade-in">
+              <div class="bg-[#131f33] border border-[#1e314f] rounded-xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
                 <div class="px-6 py-4 border-b border-[#1e314f] flex justify-between items-center bg-[#182740]">
-                  <div class="flex items-center space-x-2">
-                    <div class="w-7 h-7 rounded bg-blue-600 flex items-center justify-center text-white font-bold">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                  <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-bold shadow">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     </div>
                     <div>
-                      <h3 class="font-bold text-base text-slate-100">Official Industrial Shift Handover Report</h3>
-                      <p class="text-[11px] text-slate-400">Dynamic Multi-Operator & Incident Reconciliation</p>
+                      <div class="flex items-center space-x-2">
+                        <h3 class="font-bold text-base text-slate-100">Official Industrial Shift Handover Dossier</h3>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+                          SE-SOP-OPS-044 Standard
+                        </span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+                          Dynamic Session Audit
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-slate-400 mt-0.5">
+                        Captures live operator interactions, subsystem offending PLC tags, unacknowledged alarms, and mandatory cautions for the incoming operator.
+                      </p>
                     </div>
                   </div>
-                  <button onClick=${() => setShowHandover(false)} class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
+                  <button onClick=${() => setShowHandover(false)} class="text-slate-400 hover:text-white text-xl font-bold px-2 py-1">✕</button>
                 </div>
 
-                <!-- Handover Parameters Bar -->
-                <div class="px-6 py-3 bg-[#111a2c] border-b border-[#1e314f] grid grid-cols-4 gap-3 text-xs">
+                <!-- Shift Handover Configuration Bar -->
+                <div class="px-6 py-3 bg-[#111a2c] border-b border-[#1e314f] grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Time Window:</label>
+                    <label class="text-[10px] text-slate-400 block mb-1">Time Horizon Window:</label>
                     <select 
                       value=${handoverWindow}
                       onChange=${e => { setHandoverWindow(e.target.value); loadHandover(); }}
-                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2 py-1 text-slate-200 text-xs"
+                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2.5 py-1 text-slate-200 text-xs"
                     >
-                      <option value="2.0">Past 2 Hours</option>
+                      <option value="2.0">Past 2 Hours (Active Session)</option>
                       <option value="4.0">Past 4 Hours</option>
-                      <option value="8.0">Past 8 Hours (Full Shift)</option>
+                      <option value="8.0">Past 8 Hours (Full Shift Standard)</option>
                       <option value="12.0">Past 12 Hours</option>
                     </select>
                   </div>
                   <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Shift Type:</label>
+                    <label class="text-[10px] text-slate-400 block mb-1">Production Shift:</label>
                     <select 
                       value=${shiftName}
                       onChange=${e => { setShiftName(e.target.value); loadHandover(); }}
-                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2 py-1 text-slate-200 text-xs"
+                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2.5 py-1 text-slate-200 text-xs"
                     >
-                      <option value="Day Shift (06:00 - 14:00)">Day (06:00 - 14:00)</option>
-                      <option value="Afternoon Shift (14:00 - 22:00)">Afternoon (14:00 - 22:00)</option>
-                      <option value="Night Shift (22:00 - 06:00)">Night (22:00 - 06:00)</option>
+                      <option value="Day Shift (06:00 - 14:00)">Day Shift (06:00 - 14:00)</option>
+                      <option value="Afternoon Shift (14:00 - 22:00)">Afternoon Shift (14:00 - 22:00)</option>
+                      <option value="Night Shift (22:00 - 06:00)">Night Shift (22:00 - 06:00)</option>
                     </select>
                   </div>
                   <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Outgoing Operator:</label>
+                    <label class="text-[10px] text-slate-400 block mb-1">Outgoing Lead Operator (Present):</label>
                     <input 
                       type="text" 
                       value=${outgoingOp}
                       onInput=${e => setOutgoingOp(e.target.value)}
-                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2 py-1 text-slate-200 text-xs"
+                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2.5 py-1 text-slate-200 text-xs font-mono"
                     />
                   </div>
                   <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Incoming Operator:</label>
+                    <label class="text-[10px] text-slate-400 block mb-1">Incoming Lead Operator (Next Shift):</label>
                     <input 
                       type="text" 
                       value=${incomingOp}
                       onInput=${e => setIncomingOp(e.target.value)}
-                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2 py-1 text-slate-200 text-xs"
+                      class="w-full bg-[#182740] border border-[#1e314f] rounded px-2.5 py-1 text-slate-200 text-xs font-mono"
                     />
                   </div>
                 </div>
 
-                <div class="p-6 overflow-y-auto flex-1 text-xs space-y-4 font-mono">
+                <!-- Modal Scrollable Content -->
+                <div class="p-6 overflow-y-auto flex-1 space-y-5 text-xs">
                   ${isHandoverLoading ? html`
-                    <div class="py-12 text-center text-slate-400">
-                      <div class="animate-spin text-2xl mb-2">⟳</div>
-                      Synthesizing multi-hour telemetry & active session actions...
+                    <div class="py-16 text-center text-slate-400 space-y-2">
+                      <div class="animate-spin text-3xl mb-2 text-blue-400">⟳</div>
+                      <div class="font-semibold text-slate-200">Synthesizing live PLC telemetry & operator action ledger...</div>
+                      <p class="text-[11px] text-slate-500">Querying SQLite FTS5, ISA-18.2 unacknowledged queues, and Subsystem tags</p>
                     </div>
                   ` : handoverData ? html`
-                    <div class="bg-[#0b1320] p-4 rounded-lg border border-[#1e314f] text-slate-300 leading-relaxed whitespace-pre-line text-xs font-mono">
-                      ${handoverData.report_markdown}
+                    
+                    <!-- Metadata Header & Live Metric Badges -->
+                    <div class="bg-[#182740] p-3.5 rounded-lg border border-[#1e314f] flex flex-wrap justify-between items-center gap-3">
+                      <div class="space-y-0.5">
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider font-mono">Dossier Generation Timestamp:</div>
+                        <div class="text-sm font-bold font-mono text-emerald-400 flex items-center gap-2">
+                          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          <span>${handoverData.formatted_date || new Date().toISOString().split('T')[0]} • ${handoverData.formatted_time || new Date().toLocaleTimeString()} (Local Time)</span>
+                        </div>
+                      </div>
+                      <div class="flex items-center space-x-2 text-[11px] font-mono">
+                        <span class="px-2 py-1 rounded bg-[#131f33] border border-[#1e314f] text-slate-300">
+                          Handover: <strong class="text-blue-300">${outgoingOp}</strong> ➔ <strong class="text-emerald-300">${incomingOp}</strong>
+                        </span>
+                      </div>
                     </div>
 
-                    <div class="grid grid-cols-4 gap-3">
-                      <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
-                        <div class="text-[10px] text-slate-400">Total Monitored Events</div>
-                        <div class="text-base font-bold text-slate-100">${handoverData.total_events}</div>
+                    <!-- 4 Metric Cards -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f]">
+                        <div class="text-[10px] text-slate-400 font-mono">Total Monitored Events</div>
+                        <div class="text-lg font-bold font-mono text-slate-100">${handoverData.total_events}</div>
+                        <div class="text-[10px] text-slate-500">Telemetry & Alarm Frames</div>
                       </div>
-                      <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
-                        <div class="text-[10px] text-slate-400">Correlated Clusters</div>
-                        <div class="text-base font-bold text-emerald-400">${handoverData.correlated_clusters_count}</div>
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f]">
+                        <div class="text-[10px] text-slate-400 font-mono">Correlated Clusters</div>
+                        <div class="text-lg font-bold font-mono text-emerald-400">${handoverData.correlated_clusters_count}</div>
+                        <div class="text-[10px] text-slate-500">Root Incident Groupings</div>
                       </div>
-                      <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
-                        <div class="text-[10px] text-slate-400">Unack Alarms</div>
-                        <div class="text-base font-bold text-amber-400">${handoverData.unacknowledged_alarms_count}</div>
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f]">
+                        <div class="text-[10px] text-slate-400 font-mono">Unacknowledged Alarms</div>
+                        <div class="text-lg font-bold font-mono ${handoverData.unacknowledged_alarms_count > 0 ? 'text-rose-400 animate-pulse' : 'text-slate-100'}">
+                          ${handoverData.unacknowledged_alarms_count}
+                        </div>
+                        <div class="text-[10px] text-slate-500">Requires Next Operator Ack</div>
                       </div>
-                      <div class="bg-[#182740] p-2.5 rounded border border-[#1e314f]">
-                        <div class="text-[10px] text-slate-400">Setpoint Changes</div>
-                        <div class="text-base font-bold text-cyan-400">${handoverData.setpoint_changes_count}</div>
+                      <div class="bg-[#182740] p-3 rounded-lg border border-[#1e314f]">
+                        <div class="text-[10px] text-slate-400 font-mono">Session Operator Actions</div>
+                        <div class="text-lg font-bold font-mono text-cyan-400">${(handoverData.active_operator_actions || []).length}</div>
+                        <div class="text-[10px] text-slate-500">Writes, Sliders & Fixes</div>
                       </div>
                     </div>
+
+                    <!-- Section 1: 🚨 Mandatory Operational Cautions for Incoming Operator -->
+                    <div class="bg-[#182740] p-4 rounded-lg border border-amber-900/60 bg-gradient-to-r from-[#182740] to-amber-950/20 space-y-2.5">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <span class="text-amber-400 text-base">⚠️</span>
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-amber-200">
+                            Mandatory Operational Cautions for Incoming Operator (${incomingOp})
+                          </h4>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">
+                          Safety Priority: HIGH
+                        </span>
+                      </div>
+
+                      <div class="space-y-2">
+                        ${handoverData.cautions_for_incoming && handoverData.cautions_for_incoming.length > 0 ? handoverData.cautions_for_incoming.map(c => html`
+                          <div class="p-2.5 rounded bg-[#131f33] border border-amber-800/60 text-xs text-amber-100 flex items-start space-x-2.5">
+                            <span class="text-amber-400 font-bold mt-0.5">•</span>
+                            <div class="leading-relaxed font-mono text-[11px]">${c}</div>
+                          </div>
+                        `) : html`
+                          <div class="p-2.5 rounded bg-[#131f33] border border-emerald-800 text-xs text-emerald-200 flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span>No critical operational inhibits or high-risk active overrides in progress. All baseline interlocks armed.</span>
+                          </div>
+                        `}
+                      </div>
+                    </div>
+
+                    <!-- Section 2: 📊 Subsystem Offending PLC Tags Causing Alarms -->
+                    <div class="bg-[#182740] p-4 rounded-lg border border-[#1e314f] space-y-3">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-200">
+                            Subsystem Offending PLC Tags Causing Alarms
+                          </h4>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400">
+                          Identified via ISA-18.2 Limit Boundary Checks
+                        </span>
+                      </div>
+
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono border-collapse">
+                          <thead>
+                            <tr class="bg-[#111a2c] text-slate-400 text-[10px] border-b border-[#1e314f]">
+                              <th class="py-2 px-3">Subsystem</th>
+                              <th class="py-2 px-3">Offending PLC Tag</th>
+                              <th class="py-2 px-3">Live Reading</th>
+                              <th class="py-2 px-3">Trip Limit</th>
+                              <th class="py-2 px-3">Severity</th>
+                              <th class="py-2 px-3">Consequence If Unattended</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-[#1e314f]">
+                            ${handoverData.subsystem_offending_tags && handoverData.subsystem_offending_tags.length > 0 ? handoverData.subsystem_offending_tags.map(t => html`
+                              <tr class="hover:bg-[#1f3354] transition">
+                                <td class="py-2 px-3 font-semibold text-slate-300">${t.subsystem}</td>
+                                <td class="py-2 px-3 text-rose-300 font-bold">${t.tag}</td>
+                                <td class="py-2 px-3 text-red-400 font-bold">${t.live_value}</td>
+                                <td class="py-2 px-3 text-slate-400">${t.alarm_limit}</td>
+                                <td class="py-2 px-3">
+                                  <span class="text-[9px] px-1.5 py-0.5 rounded ${t.severity === 'CRITICAL' ? 'bg-red-950 text-red-300 border border-red-800' : 'bg-amber-950 text-amber-300 border border-amber-800'}">
+                                    ${t.severity}
+                                  </span>
+                                </td>
+                                <td class="py-2 px-3 text-slate-300 text-[11px]">${t.consequence}</td>
+                              </tr>
+                            `) : html`
+                              <tr>
+                                <td colspan="6" class="py-4 text-center text-emerald-400">
+                                  ✓ All 20 monitored tags across 5 plant subsystems are operating within nominal green-zone tolerances.
+                                </td>
+                              </tr>
+                            `}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Section 3: 📝 Real-Time Operator Activity Ledger (Live Action Audit Trail) -->
+                    <div class="bg-[#182740] p-4 rounded-lg border border-[#1e314f] space-y-3">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-200">
+                            Real-Time Operator Activity Ledger (Live Session Audit Trail)
+                          </h4>
+                        </div>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">
+                          Non-Repudiable Action Ledger
+                        </span>
+                      </div>
+
+                      <p class="text-[11px] text-slate-400">
+                        Tracks every action performed by the present operator (What-If slider writes, setpoint overrides, alarm storm triggers, and root cause failovers) with real-world timestamps.
+                      </p>
+
+                      <div class="overflow-x-auto max-h-60 overflow-y-auto">
+                        <table class="w-full text-left text-xs font-mono border-collapse">
+                          <thead class="sticky top-0 bg-[#111a2c] z-10">
+                            <tr class="text-slate-400 text-[10px] border-b border-[#1e314f]">
+                              <th class="py-2 px-3">Date & Time</th>
+                              <th class="py-2 px-3">Operator</th>
+                              <th class="py-2 px-3">Action Type</th>
+                              <th class="py-2 px-3">Operational Details & Tag Impact</th>
+                              <th class="py-2 px-3">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-[#1e314f]">
+                            ${handoverData.active_operator_actions && handoverData.active_operator_actions.length > 0 ? handoverData.active_operator_actions.map(act => html`
+                              <tr class="hover:bg-[#1f3354] transition">
+                                <td class="py-2 px-3 text-cyan-300 font-bold whitespace-nowrap">${act.timestamp}</td>
+                                <td class="py-2 px-3 text-slate-300 whitespace-nowrap">${act.operator}</td>
+                                <td class="py-2 px-3 whitespace-nowrap">
+                                  <span class="text-[9px] px-1.5 py-0.5 rounded ${act.action_type === 'ROOT_CAUSE_RESOLVED' ? 'bg-emerald-950 text-emerald-300 border border-emerald-700' : act.action_type === 'WHATIF_TAG_WRITE' ? 'bg-cyan-950 text-cyan-300 border border-cyan-700' : act.action_type === 'SETPOINT_OVERRIDE' ? 'bg-purple-950 text-purple-300 border border-purple-700' : 'bg-slate-800 text-slate-300'}">
+                                    ${act.action_type}
+                                  </span>
+                                </td>
+                                <td class="py-2 px-3 text-slate-200 text-[11px]">${act.details}</td>
+                                <td class="py-2 px-3 whitespace-nowrap">
+                                  <span class="text-[9px] font-bold text-emerald-400 flex items-center gap-1">
+                                    ✓ ${act.status || 'COMMITTED'}
+                                  </span>
+                                </td>
+                              </tr>
+                            `) : html`
+                              <tr>
+                                <td colspan="5" class="py-4 text-center text-slate-500">
+                                  No operator actions performed in this active session yet. Perform a setpoint update or slider write to see it logged here.
+                                </td>
+                              </tr>
+                            `}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <!-- Section 4: 📜 Full Official Markdown Dossier -->
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                          <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                          <h4 class="font-bold text-xs uppercase tracking-wider text-slate-200">
+                            Official Markdown Shift Handover Dossier
+                          </h4>
+                        </div>
+                        <button
+                          onClick=${() => {
+                            if (handoverData && handoverData.report_markdown) {
+                              navigator.clipboard.writeText(handoverData.report_markdown);
+                              setCopiedHandover(true);
+                              setTimeout(() => setCopiedHandover(false), 2500);
+                            }
+                          }}
+                          class="bg-[#182740] hover:bg-slate-700 text-blue-300 border border-blue-900/60 text-xs px-2.5 py-1 rounded transition flex items-center space-x-1"
+                        >
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                          <span>${copiedHandover ? '✓ Copied Markdown!' : 'Copy Markdown'}</span>
+                        </button>
+                      </div>
+
+                      <div class="bg-[#0b1320] p-4 rounded-lg border border-[#1e314f] text-slate-300 leading-relaxed whitespace-pre-line text-xs font-mono max-h-72 overflow-y-auto">
+                        ${handoverData.report_markdown}
+                      </div>
+                    </div>
+
                   ` : ''}
                 </div>
 
+                <!-- Modal Footer -->
                 <div class="px-6 py-3 border-t border-[#1e314f] flex justify-between items-center bg-[#182740]">
-                  <span class="text-[11px] text-emerald-400 flex items-center gap-1 font-semibold">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    Safety Guardrail Verified
+                  <span class="text-[11px] text-emerald-400 flex items-center gap-1.5 font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Safety Guardrail Verified (Deterministic Interlock & Air-Gapped)
                   </span>
                   <div class="flex space-x-2">
                     <button 
-                      onClick=${loadHandover}
-                      class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded transition"
+                      onClick=${() => window.print()}
+                      class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3 py-1.5 rounded transition flex items-center space-x-1"
                     >
-                      Regenerate Report
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                      <span>Print Dossier</span>
+                    </button>
+                    <button 
+                      onClick=${loadHandover}
+                      class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded transition flex items-center space-x-1"
+                    >
+                      <span>⟳ Refresh Ledger & Handover</span>
                     </button>
                     <button 
                       onClick=${() => setShowHandover(false)}

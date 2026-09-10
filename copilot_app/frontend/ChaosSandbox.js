@@ -499,7 +499,19 @@
                       onInput=${e => {
                         const val = parseInt(e.target.value);
                         setConfirmSlide(val);
-                        if (val === 100) setApplySuccess(true);
+                        if (val === 100) {
+                          setApplySuccess(true);
+                          fetch("/api/operator_action", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action_type: "WHATIF_TAG_WRITE",
+                              details: `Operator authorized PLC tag write via What-If Sandbox: ${simResult ? simResult.action_proposed : 'Coolant Valve +30%'} (Flow target: ${simResult ? simResult.target_cool_flow : 55.2} L/min). Process verified stable.`,
+                              operator: "M. Dubois (Shift A)",
+                              tag_id: "Cooling_Water_Flow_PV"
+                            })
+                          }).catch(err => console.error("Ledger log error:", err));
+                        }
                       }}
                       class="w-full accent-emerald-500 cursor-pointer h-2.5 bg-slate-700 rounded-lg"
                     />

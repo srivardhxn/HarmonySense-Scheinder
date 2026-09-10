@@ -19,11 +19,12 @@ import uuid
 # - VFD-Inverter: Altivar inverter IGBT overcurrent, DC bus voltage, thermal fault
 # - Safety-Grid: Master dual-channel E-Stop relay, pneumatic safety dump valve
 ASSET_TOPOLOGY = {
-    "Utility-Chiller": [],
-    "Tank-101": [],
-    "Conveyor-201": [],
+    "Primary-Heat-Exchanger": ["Utility-Chiller", "Tank-101"],
+    "Utility-Chiller": ["Primary-Heat-Exchanger", "Tank-101"],
+    "Tank-101": ["Conveyor-201"],
+    "Conveyor-201": ["VFD-Inverter"],
     "VFD-Inverter": [],
-    "Safety-Grid": [],
+    "Safety-Grid": ["Line-01"],
     "Line-01": []
 }
 

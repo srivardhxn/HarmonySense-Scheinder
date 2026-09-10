@@ -166,5 +166,43 @@
       "jumper_safety_gate_switch",
       "override_dual_channel_interlock"
     ]
+  },
+  {
+    "sop_id": "SOP-CHL-002",
+    "title": "Industrial Chiller Pump Impeller Cavitation & Secondary Heat Exchanger Cascade Recovery (ASHRAE 15 / ISO 5149)",
+    "applies_to_alarms": [
+      "ALM-CHL-001-FLOW",
+      "ALM-CHL-002-ITLK",
+      "ALM-HX-101-CAVIT",
+      "ALM-HX-101-FLOW_LOW"
+    ],
+    "steps": [
+      {
+        "step": 1,
+        "instruction": "Immediately verify suction pressure HX_Suction_Pressure_PV. If pressure < 0.6 bar or pump vibration HX_Pump101_Vibration_PV > 4.5 mm/s, pump cavitation is occurring."
+      },
+      {
+        "step": 2,
+        "instruction": "Initiate automated or manual lead-to-lag pump failover by commanding HX_Standby_Pump_Cmd = 1 to start standby auxiliary chiller pump P-102."
+      },
+      {
+        "step": 3,
+        "instruction": "Verify cooling loop flow rate HX_Pump101_Flow_PV and Cooling_Water_Flow_PV recover above 42.0 L/min within 15 seconds."
+      },
+      {
+        "step": 4,
+        "instruction": "Confirm downstream thermal cooling interlock Cooling_Interlock_Status resets to 1 (ARMED), cooling Tank 101 core temperature below 65.0°C and extinguishing secondary cascade alarms."
+      },
+      {
+        "step": 5,
+        "instruction": "Perform zero-energy Lock-Out/Tag-Out (LOTO) on pump P-101 suction line and inspect Y-strainer mesh for particulate fouling or scaling before re-commissioning."
+      }
+    ],
+    "restricted_actions": [
+      "force_cavitation_pump_run",
+      "disable_suction_pressure_switch",
+      "bypass_chiller_flow_switch",
+      "override_chiller_interlock"
+    ]
   }
 ]

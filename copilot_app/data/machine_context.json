@@ -227,6 +227,54 @@
       "raw_address": "%MW100",
       "confidence": "low",
       "description": "Unmapped Modbus Holding Register 100 (Legacy Address - Ambiguous Symbol)"
+    },
+    {
+      "id": "HX_Pump101_Flow_PV",
+      "unit_parent": "Primary-Heat-Exchanger",
+      "data_type": "REAL",
+      "engineering_unit": "L/min",
+      "min": 0.0,
+      "max": 80.0,
+      "access": "read",
+      "raw_address": "%MF410",
+      "confidence": "high",
+      "description": "Heat Exchanger Primary Coolant Circulation Flow Rate"
+    },
+    {
+      "id": "HX_Suction_Pressure_PV",
+      "unit_parent": "Primary-Heat-Exchanger",
+      "data_type": "REAL",
+      "engineering_unit": "bar",
+      "min": 0.0,
+      "max": 4.0,
+      "access": "read",
+      "raw_address": "%MF414",
+      "confidence": "high",
+      "description": "Primary Chiller Pump P-101 Net Positive Suction Pressure (NPSH)"
+    },
+    {
+      "id": "HX_Pump101_Vibration_PV",
+      "unit_parent": "Primary-Heat-Exchanger",
+      "data_type": "REAL",
+      "engineering_unit": "mm/s",
+      "min": 0.0,
+      "max": 15.0,
+      "access": "read",
+      "raw_address": "%MF418",
+      "confidence": "high",
+      "description": "Chiller Pump P-101 Radial Bearing Vibration Amplitude (Cavitation Indicator)"
+    },
+    {
+      "id": "HX_Standby_Pump_Cmd",
+      "unit_parent": "Primary-Heat-Exchanger",
+      "data_type": "BOOL",
+      "engineering_unit": "state",
+      "min": 0,
+      "max": 1,
+      "access": "write",
+      "raw_address": "%QX4.0",
+      "confidence": "high",
+      "description": "Standby Lag Chiller Pump P-102 Automated Failover Command (1=Engaged)"
     }
   ],
   "alarms": [
@@ -325,6 +373,22 @@
       "threshold": 4.5,
       "priority": "HIGH",
       "message": "Plant Main Pneumatic Supply Header Pressure Low (< 4.5 bar)"
+    },
+    {
+      "id": "ALM-HX-101-CAVIT",
+      "tag_ref": "HX_Pump101_Vibration_PV",
+      "condition": "HIGH_HIGH",
+      "threshold": 4.5,
+      "priority": "CRITICAL",
+      "message": "Primary Heat Exchanger Pump P-101 Cavitation & Suction Strainer Starvation (Root Failure)"
+    },
+    {
+      "id": "ALM-HX-101-FLOW_LOW",
+      "tag_ref": "HX_Pump101_Flow_PV",
+      "condition": "LOW_LOW",
+      "threshold": 15.0,
+      "priority": "CRITICAL",
+      "message": "Primary Heat Exchanger Coolant Circulation Collapse (< 15.0 L/min)"
     }
   ],
   "io": {
