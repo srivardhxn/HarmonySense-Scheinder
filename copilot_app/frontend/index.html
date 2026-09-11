@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Schneider Electric EcoStruxure™ Runtime Copilot</title>
+  <title>Schneider Electric HarmonySense-EcoStruxure™ Runtime Copilot</title>
   <link rel="stylesheet" href="/styles.css">
   <!-- Tailwind CDN with graceful local styling fallback -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -605,7 +605,7 @@
                 </div>
                 <div>
                   <h1 class="font-bold text-base tracking-wide text-white flex items-center gap-2">
-                    EcoStruxure™ Runtime Copilot
+                    <span class="text-emerald-400 font-extrabold tracking-wide">HarmonySense</span><span class="text-slate-400 font-light">-</span><span>EcoStruxure™ Runtime Copilot</span>
                     <span class="text-xs font-normal px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
                       Problem Statement 1
                     </span>
@@ -1255,7 +1255,7 @@
                 <div class="flex items-center justify-between pb-3 border-b border-[#1e314f] mb-3">
                   <div class="flex items-center space-x-2">
                     <div class="w-3 h-3 rounded-full bg-[#009530] flex items-center justify-center text-[8px] text-white font-bold">AI</div>
-                    <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">Runtime Copilot Advisory</h2>
+                    <h2 class="text-sm font-bold tracking-wide uppercase text-slate-200">HarmonySense Runtime Copilot Advisory</h2>
                   </div>
                   ${copilotResult ? html`
                     <span class="badge-guardrail ${copilotResult.confidence_level === 'high' ? 'badge-green' : copilotResult.confidence_level === 'low' ? 'badge-yellow' : 'badge-blue'}">
